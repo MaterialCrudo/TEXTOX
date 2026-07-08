@@ -1,0 +1,863 @@
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TEXTOX</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔴</text></svg>">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      font-family: sans-serif;
+    }
+
+    .panel {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 2rem;
+      min-width: 320px;
+      z-index: 999;
+      box-shadow: 0 8px 32px #000a;
+    }
+
+    button {
+      background: #1e1e1e;
+      border: 1px solid #444;
+      color: #eee;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      opacity: 0.85;
+    }
+    button:not(.btn-color):not(#btn-hide):hover { background: #1a8fff !important; color: #111 !important; }
+    #btn-hide:hover { opacity: 1 !important; }
+    #barra-derecha {
+      position: fixed;
+      top: 24px;
+      right: 10px;
+      opacity: 0.35;
+      transition: opacity 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: stretch;
+    }
+    #barra-derecha:hover { opacity: 1; }
+
+    /* Sidebar izquierdo */
+    #sidebar {
+      position: fixed;
+      top: 24px;
+      left: 2px;
+      opacity: 0.35;
+      transition: opacity 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+    #sidebar:hover { opacity: 1; }
+
+    /* Botones de color circulares */
+    .btn-color {
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 1px solid #555;
+      padding: 0;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .btn-color:hover { transform: scale(1.4); }
+    @keyframes blink-color {
+      0%,100%{ opacity:1; transform:scale(1); }
+      25%{ opacity:0.2; transform:scale(0.85); }
+      50%{ opacity:1; transform:scale(1); }
+      75%{ opacity:0.2; transform:scale(0.85); }
+    }
+    .btn-color-blink {
+      animation: blink-color 0.5s ease;
+    }
+
+    /* Editor principal */
+    #e {
+      max-width: 800px;
+      width: 100%;
+      padding: 3rem 2rem;
+      padding-right: 75px;
+      padding-left: 75px;
+      font-size: 1.35rem;
+      line-height: 1.6;
+      outline: none;
+      min-height: 90vh;
+      text-align: left;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    /* Diálogo guardar */
+    #dlg {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 2rem;
+      min-width: 500px;
+      z-index: 1001;
+      box-shadow: 0 8px 32px #000a;
+    }
+    #dlg-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: #0006;
+    }
+    #dlg-input {
+      flex: 1;
+      box-sizing: border-box;
+      background: #111;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #eee;
+      padding: 0.5rem 0.7rem;
+      font-size: 1rem;
+      outline: none;
+    }
+    #dlg-cancel {
+      background: #333;
+      border: 1px solid #555;
+      color: #eee;
+      padding: 0.4rem 1.1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #dlg-ok {
+      background: #0a84ff;
+      border: none;
+      color: #fff;
+      padding: 0.4rem 1.1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* Animaciones CVX */
+    .anim-cvx {
+      position: fixed;
+      pointer-events: none;
+      z-index: 2000;
+      font-weight: bold;
+      color: #fff;
+      user-select: none;
+    }
+    .anim-c {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 5px solid #fff;
+      background: transparent;
+    }
+    .anim-v {
+      width: 80px;
+      height: 20px;
+      background: #fff;
+    }
+    .anim-x {
+      font-size: 4rem;
+      line-height: 1;
+    }
+    .anim-x2 {
+      font-size: 2.2rem;
+      line-height: 1;
+      color: #fff;
+      position: fixed;
+      pointer-events: none;
+      z-index: 2000;
+      user-select: none;
+    }
+    @keyframes anim-copiar {
+      0%   { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(-50px,-90px) scale(0.1); opacity: 0; }
+    }
+    @keyframes anim-pegar {
+      0%   { transform: translateX(0) scaleX(1); opacity: 1; }
+      100% { transform: translateX(-120px) scaleX(0.1); opacity: 0; }
+    }
+    @keyframes anim-cortar {
+      0%   { opacity:1; transform: rotate(0deg) scale(1); }
+      15%  { opacity:0; transform: rotate(20deg) scale(1.4); }
+      30%  { opacity:1; transform: rotate(-15deg) scale(0.8); }
+      45%  { opacity:0; transform: rotate(30deg) scale(1.6); }
+      60%  { opacity:1; transform: rotate(-25deg) scale(1.2); }
+      75%  { opacity:0; transform: rotate(10deg) scale(0.5); }
+      100% { opacity:0; transform: rotate(-40deg) scale(0.1); }
+    }
+    @keyframes anim-cortar2 {
+      0%   { opacity:1; transform: rotate(0deg) scale(1); }
+      20%  { opacity:0; transform: rotate(-30deg) scale(1.3); }
+      40%  { opacity:1; transform: rotate(25deg) scale(0.7); }
+      70%  { opacity:0; transform: rotate(-15deg) scale(0.4); }
+      100% { opacity:0; }
+    }
+
+    /* Notificaciones CVX */
+    #notif-cvx {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 2000;
+      font-size: 1rem;
+      font-family: monospace;
+    }
+    @keyframes notif-copiado {
+      0%   { opacity:1; transform: scale(1); }
+      70%  { opacity:1; transform: scale(1); }
+      100% { opacity:0; transform: scale(0.5); }
+    }
+    @keyframes notif-cortado {
+      0%   { opacity:1; }
+      20%  { opacity:0; }
+      40%  { opacity:1; }
+      60%  { opacity:0; }
+      80%  { opacity:1; }
+      100% { opacity:0; }
+    }
+    @keyframes notif-pegado-txt {
+      0%   { transform: translateX(0); opacity:1; }
+      60%  { transform: translateX(0); opacity:1; }
+      100% { transform: translateX(60px); opacity:0; }
+    }
+    @keyframes notif-pegado-bg {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    /* Tabla de atajos */
+    #tabla-atajos {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    #tabla-atajos td {
+      padding: 0.08rem 1rem;
+    }
+    #tabla-atajos td:first-child {
+      color: #aaa;
+      padding-right: 0.6rem;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+<div id="barra-derecha">
+  <button onclick="toggleBotones()" id="btn-hide" style="background:#aa1111;opacity:0.6;">✗</button>
+  <button onclick="toggleAyudas()">Atajos</button>
+  <div style="height:12px"></div>
+  <button onclick="document.getElementById('f').click()">Abrir</button>
+  <button onclick="guardarHTML()">.HTML</button>
+  <button onclick="guardarTXT()">.TXT</button>
+  <button onclick="guardarMD()">.MD</button>
+  <button onclick="if(confirm('¿Borrar pantalla?')){e.innerText='';localStorage.removeItem('txt');}">Nuevo</button>
+  <input type="file" id="f" style="display:none" accept=".html,.txt,.md" onchange="cargarArchivo(this)">
+  <div style="height:12px"></div>
+  <button onclick="toggleAncho()" id="btn-ancho">←W→</button>
+  <button onclick="toggleLineHeight()" id="btn-lh">Linea</button>
+  <button onclick="rotarTipo()" id="btn-tipo">abc 0</button>
+  <div style="height:3px"></div>
+  <button onclick="document.execCommand('copy');animCVX('C',this);notifCVX('C')">C</button>
+  <button onclick="document.execCommand('paste');animCVX('V',this);notifCVX('V')">V</button>
+  <button onclick="document.execCommand('cut');animCVX('X',this);notifCVX('X')">X</button>
+  <div style="height:3px"></div>
+  <button onclick="Formatear()" title="FORMATEAR">__</button>
+  <button onclick="e.focus();document.execCommand('selectAll')">ALL</button>
+  <div style="height:4px"></div>
+</div>
+
+<!-- Panel de atajos -->
+<div id="ayudas" class="panel" contenteditable="false" style="display:none;flex-direction:row;padding:0;overflow:hidden;">
+  <div style="padding:0.6rem 0.6rem 0.6rem 0.6rem;">
+  <table id="tabla-atajos" style="padding:0;">
+  <tr><td>Ctrl Z</td><td>Deshacer</td></tr>
+  <tr><td>Ctrl Y / Ctrl Shift Z</td><td>Rehacer</td></tr>
+  <tr><td>Alt Shift 4 5 6 7 8 9</td><td>Colores</td></tr>
+  <tr><td>Alt Shift 1 2 3</td><td>Tamaño Selección</td></tr>
+  <tr><td>Alt Shift ↑ ↓</td><td>Tamaño Párrafo</td></tr>
+  <tr><td>Ctrl B / Ctrl K</td><td>Negrita</td></tr>
+  <tr><td>Ctrl I</td><td>Cursiva</td></tr>
+  <tr><td>Ctrl U</td><td>Subrayar</td></tr>
+  <tr><td>Ctrl L / R</td><td>Alinear Izquierda / Derecha</td></tr>
+  <tr><td>Ctrl E / J</td><td>Centrar / Justificar</td></tr>
+  <tr><td>Alt Shift X</td><td>Ocultar Botones</td></tr>
+  <tr><td>Alt Shift W</td><td>Ancho Columna</td></tr>
+  <tr><td>Alt Shift L</td><td>Interlineado</td></tr>
+  <tr><td>Alt Shift 0</td><td>Tipografía</td></tr>
+  <tr><td>Ctrl C / V / X</td><td>Copiar / Pegar / Cortar</td></tr>
+  <tr><td>Ctrl Space</td><td>Formatear</td></tr>
+  <tr><td>Ctrl A</td><td>Seleccionar Todo</td></tr>
+  <tr><td>Ctrl F</td><td>Búsqueda</td></tr>
+  <tr><td>F11</td><td>Pantalla Completa</td></tr>
+
+  </table>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:0.6rem 0.4rem;border-left:1px solid #333;min-width:28px;gap:0.5rem;background:#aa0000;">
+    <button onclick="toggleAyudas()" style="background:none;border:none;color:#fff;font-size:1rem;cursor:pointer;padding:0;line-height:1;">✕</button>
+    <span style="writing-mode:vertical-rl;font-family:'Courier New',Courier,monospace;font-size:0.95rem;color:#fff;letter-spacing:0.15em;white-space:nowrap;">&#160;Atajos de Teclado</span>
+  </div>
+</div>
+<div id="ayudas-overlay" style="display:none;position:fixed;inset:0;z-index:998;" onclick="toggleAyudas()"></div>
+
+<div id="notif-cvx"></div>
+
+<!-- Diálogo personalizado para nombre de archivo -->
+<div id="dlg">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.2rem;border-bottom:1px solid #444;padding-bottom:0.8rem;">
+    <span style="font-size:1.3rem;">🔴</span>
+    <strong style="font-size:1rem;letter-spacing:1px;">TEXTOX</strong>
+  </div>
+  <div style="margin-bottom:0.7rem;font-size:0.95rem;">Nombre para Guardar:</div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <input id="dlg-input" type="text" value="">
+    <span id="dlg-ext" style="color:#aaa;font-size:1rem;white-space:nowrap;"></span>
+  </div>
+  <div id="dlg-info" style="margin-top:1rem;font-size:0.85rem;color:#bbb;line-height:1.5;border-top:1px solid #333;padding-top:0.8rem;"></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:1rem;">
+    <button id="dlg-cancel">Cancelar</button>
+    <button id="dlg-ok">Aceptar</button>
+  </div>
+</div>
+<div id="dlg-overlay"></div>
+
+<div id="sidebar">
+
+  <div style="display:flex;gap:3px;justify-content:center;">
+    <button onclick="doUndo()" title="Deshacer" style="background:#fff;border:none;color:#111;font-size:0.8rem;padding:0px 3px;border-radius:3px;cursor:pointer;">Z</button>
+    <button onclick="doRedo()" title="Rehacer" style="background:#fff;border:none;color:#111;font-size:0.8rem;padding:0px 3px;border-radius:3px;cursor:pointer;">Y</button>
+  </div>
+
+  <div style="height:5px"></div>
+
+  <button onclick="document.execCommand('foreColor',false,'#ffffff');blinkColor(this)" class="btn-color" style="background:#ffffff;"></button>
+  <button onclick="document.execCommand('foreColor',false,'#1a8fff');blinkColor(this)" class="btn-color" style="background:#1a8fff;"></button>
+  <button onclick="document.execCommand('foreColor',false,'#aaee00');blinkColor(this)" class="btn-color" style="background:#aaee00;"></button>
+  <button onclick="document.execCommand('foreColor',false,'#ff6600');blinkColor(this)" class="btn-color" style="background:#ff6600;"></button>
+  <button onclick="document.execCommand('foreColor',false,'#ff00fe');blinkColor(this)" class="btn-color" style="background:#ff00fe;"></button>
+  <button onclick="document.execCommand('foreColor',false,'#777777');blinkColor(this)" class="btn-color" style="background:#777777;"></button>
+
+  <div style="height:2px"></div>
+
+  <button onclick="setSize('0.9rem')">1</button>
+  <button onclick="setSize('1.35rem')">2</button>
+  <button onclick="setSize('3.1rem')">3</button>
+
+  <div style="height:4px"></div>
+
+  <button onclick="document.execCommand('bold')"><b>B</b></button>
+  <button onclick="document.execCommand('italic')"><i>I</i></button>
+  <button onclick="document.execCommand('underline')"><u>U</u></button>
+
+  <div style="height:4px"></div>
+
+  <button onclick="document.execCommand('justifyLeft')">◁</button>
+  <button onclick="document.execCommand('justifyRight')">▷</button>
+  <button onclick="document.execCommand('justifyCenter')">○</button>
+  <button onclick="document.execCommand('justifyFull')" style="font-size:0.7em">‖‖</button>
+
+  <div style="height:4px"></div>
+
+</div>
+
+<!-- Barra ↩↪ junto al ? pero flotante arriba izquierda con fondo negro -->
+
+
+<main contenteditable id="e"></main>
+
+<script>
+const e=document.getElementById('e');
+e.innerHTML=localStorage.getItem('txt')||'';
+
+// Posicionar el cursor al principio del texto al cargar
+e.focus();
+const initRange=document.createRange();
+initRange.setStart(e,0);
+initRange.collapse(true);
+const initSel=window.getSelection();
+initSel.removeAllRanges();
+initSel.addRange(initRange);
+
+// ── Sistema de historial (150 pasos) ──────────────────────────────────────────
+const HIST_MAX=150;
+const hist=[];
+let histIdx=-1;
+let snapTimer=null;
+
+function saveSnap(){
+  if(histIdx<hist.length-1) hist.splice(histIdx+1);
+  const snap=e.innerHTML;
+  if(hist.length>0&&hist[hist.length-1]===snap) return;
+  hist.push(snap);
+  if(hist.length>HIST_MAX) hist.shift();
+  histIdx=hist.length-1;
+}
+
+function scheduleSnap(){
+  clearTimeout(snapTimer);
+  snapTimer=setTimeout(saveSnap,300);
+}
+
+if(e.innerHTML) saveSnap();
+
+e.oninput=()=>{
+  localStorage.setItem('txt',e.innerHTML);
+  scheduleSnap();
+};
+
+// ── Panel de atajos ───────────────────────────────────────────────────────────
+function toggleAyudas(){
+  const p=document.getElementById('ayudas');
+  const o=document.getElementById('ayudas-overlay');
+  const visible=p.style.display==='flex';
+  p.style.display=visible?'none':'flex';
+  o.style.display=visible?'none':'block';
+}
+
+// ── Tamaño de texto ───────────────────────────────────────────────────────────
+function setSize(size){
+  const sel=window.getSelection();
+  if(!sel||sel.rangeCount===0||sel.isCollapsed)return;
+  const r0=sel.getRangeAt(0);
+  if(!e.contains(r0.commonAncestorContainer))return;
+  saveSnap();
+  const range=sel.getRangeAt(0);
+  const frag=range.extractContents();
+  const spans=frag.querySelectorAll('[style]');
+  spans.forEach(s=>{s.style.fontSize='';});
+  const wrapper=document.createElement('span');
+  wrapper.style.fontSize=size;
+  wrapper.appendChild(frag);
+  range.insertNode(wrapper);
+  const newRange=document.createRange();
+  newRange.selectNodeContents(wrapper);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+  localStorage.setItem('txt',e.innerHTML);
+}
+
+function Formatear(){
+  const sel=window.getSelection();
+  if(!sel||sel.rangeCount===0||sel.isCollapsed)return;
+  const r0=sel.getRangeAt(0);
+  if(!e.contains(r0.commonAncestorContainer))return;
+  saveSnap();
+  const r=sel.getRangeAt(0);
+  const d=document.createElement('div');
+  d.appendChild(r.cloneContents());
+  let h=d.innerHTML;
+  h=h.replace(/<sup[^>]*>.*?<\/sup>/gi,'');
+  h=h.replace(/<sub[^>]*>.*?<\/sub>/gi,'');
+  h=h.replace(/<li[^>]*>(.*?)<\/li>/gi,'$1<br>');
+  h=h.replace(/<ul[^>]*>|<\/ul>|<ol[^>]*>|<\/ol>/gi,'');
+  h=h.replace(/\[\d+\]/g,'');
+  h=h.replace(/<br\s*\/?>/gi,'%%SALTO%%');
+  h=h.replace(/<\/div>/gi,'%%SALTO%%');
+  h=h.replace(/<\/p>/gi,'%%SALTO%%');
+  h=h.replace(/<[^>]+>/g,'');
+  h=h.replace(/&nbsp;/g,' ');
+  h=h.replace(/&amp;/g,'&');
+  h=h.replace(/&lt;/g,'<');
+  h=h.replace(/&gt;/g,'>');
+  h=h.replace(/%%SALTO%%/g,'<br>');
+  h=h.replace(/(<br>){3,}/g,'<br><br>');
+  r.deleteContents();
+  const temp=document.createElement('span');
+  temp.innerHTML=h;
+  r.insertNode(temp);
+  localStorage.setItem('txt',e.innerHTML);
+}
+
+// ── Deshacer / Rehacer (llamados desde botones) ───────────────────────────────
+function doUndo(){
+  clearTimeout(snapTimer);
+  if(histIdx===hist.length-1){
+    const snap=e.innerHTML;
+    if(hist.length===0||hist[hist.length-1]!==snap){
+      hist.push(snap);
+      if(hist.length>HIST_MAX) hist.shift();
+      histIdx=hist.length-1;
+    }
+  }
+  if(histIdx>0){
+    histIdx--;
+    e.innerHTML=hist[histIdx];
+    localStorage.setItem('txt',hist[histIdx]);
+  }
+}
+
+function doRedo(){
+  clearTimeout(snapTimer);
+  if(histIdx<hist.length-1){
+    histIdx++;
+    e.innerHTML=hist[histIdx];
+    localStorage.setItem('txt',hist[histIdx]);
+  }
+}
+
+// ── Teclado ───────────────────────────────────────────────────────────────────
+window.addEventListener('keydown',(x)=>{
+
+  // Bloquear Backspace/Delete cuando el foco no está en un campo editable,
+  // para evitar que el navegador vuelva a la página anterior
+  if(x.key==='Backspace'||x.key==='Delete'){
+    const t=document.activeElement;
+    const enEditable=t&&(t.isContentEditable||t.tagName==='INPUT'||t.tagName==='TEXTAREA');
+    if(!enEditable){
+      x.preventDefault();
+      return;
+    }
+  }
+
+  // Deshacer / Rehacer
+  if((x.ctrlKey||x.metaKey)&&!x.altKey){
+    if(x.code==='KeyZ'&&!x.shiftKey){
+      x.preventDefault();
+      doUndo();
+      return;
+    }
+    if(x.code==='KeyY'||(x.code==='KeyZ'&&x.shiftKey)){
+      x.preventDefault();
+      doRedo();
+      return;
+    }
+  }
+
+  // Atajos con Alt + Shift
+  if(x.altKey&&x.shiftKey){
+    if(x.code==='Digit1'){x.preventDefault();setSize('0.9rem')}
+    else if(x.code==='Digit2'){x.preventDefault();setSize('1.35rem')}
+    else if(x.code==='Digit3'){x.preventDefault();setSize('3.1rem')}
+    else if(x.code==='Digit4'){x.preventDefault();document.execCommand('foreColor',false,'#ffffff')}
+    else if(x.code==='Digit5'){x.preventDefault();document.execCommand('foreColor',false,'#1a8fff')}
+    else if(x.code==='Digit6'){x.preventDefault();document.execCommand('foreColor',false,'#aaee00')}
+    else if(x.code==='Digit7'){x.preventDefault();document.execCommand('foreColor',false,'#ff6600')}
+    else if(x.code==='Digit8'){x.preventDefault();document.execCommand('foreColor',false,'#ff00fe')}
+    else if(x.code==='Digit9'){x.preventDefault();document.execCommand('foreColor',false,'#777777')}
+    else if(x.code==='ArrowUp'){x.preventDefault();modificarTamaño(true)}
+    else if(x.code==='ArrowDown'){x.preventDefault();modificarTamaño(false)}
+    else if(x.code==='KeyL'){x.preventDefault();toggleLineHeight()}
+    else if(x.code==='KeyW'){x.preventDefault();toggleAncho()}
+    else if(x.code==='KeyX'){x.preventDefault();toggleBotones()}
+    else if(x.code==='Digit0'){x.preventDefault();rotarTipo()}
+    
+    // ¡Blindaje de guardado automático para Alt + Shift!
+    localStorage.setItem('txt',e.innerHTML);
+  }
+  
+  // Atajos con Ctrl
+  if(x.ctrlKey||x.metaKey){
+    const c=x.code;
+    if(c==='KeyB'||c==='KeyK'){x.preventDefault();document.execCommand('bold',false,null)}
+    else if(c==='KeyI'){x.preventDefault();document.execCommand('italic',false,null)}
+    else if(c==='KeyU'){x.preventDefault();document.execCommand('underline',false,null)}
+    else if(c==='KeyL'){x.preventDefault();document.execCommand('justifyLeft',false,null)}
+    else if(c==='KeyE'){x.preventDefault();document.execCommand('justifyCenter',false,null)}
+    else if(c==='KeyR'){x.preventDefault();document.execCommand('justifyRight',false,null)}
+    else if(c==='KeyJ'){x.preventDefault();document.execCommand('justifyFull',false,null)}
+    else if(c==='Space'){x.preventDefault();Formatear()}
+    else if(c==='KeyC'&&!x.shiftKey){setTimeout(()=>notifCVX('C'),50)}
+    else if(c==='KeyV'&&!x.shiftKey){setTimeout(()=>notifCVX('V'),50)}
+    else if(c==='KeyX'&&!x.shiftKey&&!x.altKey){setTimeout(()=>notifCVX('X'),50)}
+    
+    localStorage.setItem('txt',e.innerHTML);
+  }
+});
+
+function blinkColor(btn){
+  btn.classList.remove('btn-color-blink');
+  void btn.offsetWidth;
+  btn.classList.add('btn-color-blink');
+  btn.addEventListener('animationend',()=>btn.classList.remove('btn-color-blink'),{once:true});
+}
+
+// ── Ocultar botones ───────────────────────────────────────────────────────────
+let botonesOcultos=false;
+function toggleBotones(){
+  botonesOcultos=!botonesOcultos;
+  const barra=document.getElementById('btn-hide').parentElement;
+  Array.from(barra.children).forEach(el=>{
+    if(el.id!=='btn-hide') el.style.visibility=botonesOcultos?'hidden':'visible';
+  });
+  document.getElementById('sidebar').style.visibility=botonesOcultos?'hidden':'visible';
+  document.getElementById('btn-hide').style.opacity=botonesOcultos?'0.4':'';
+  barra.style.opacity=botonesOcultos?'0.7':'';
+}
+
+// ── Notificaciones CVX ───────────────────────────────────────────────────────
+let notifTimeout=null;
+function notifCVX(tipo){
+  const n=document.getElementById('notif-cvx');
+  n.innerHTML='';
+  clearTimeout(notifTimeout);
+  if(tipo==='C'){
+    // Copiado: fondo negro, borde blanco, letras blancas, se achica y desaparece
+    const d=document.createElement('div');
+    d.textContent='Copiado';
+    d.style.cssText='border:1px solid #fff;background:#000;color:#fff;padding:3px 12px;animation:notif-copiado 1s ease-out forwards;';
+    n.appendChild(d);
+    notifTimeout=setTimeout(()=>n.innerHTML='',1000);
+  } else if(tipo==='V'){
+    // Pegado: fondo blanco, borde negro, letras negras, texto barre derecha fondo barre izquierda
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:relative;overflow:hidden;border:1px solid #000;';
+    const bg=document.createElement('div');
+    bg.style.cssText='position:absolute;inset:0;background:#fff;animation:notif-pegado-bg 0.8s ease-in forwards;';
+    const txt=document.createElement('div');
+    txt.textContent='Pegado';
+    txt.style.cssText='position:relative;color:#000;padding:3px 12px;animation:notif-pegado-txt 0.8s ease-in forwards;';
+    wrap.appendChild(bg);
+    wrap.appendChild(txt);
+    n.appendChild(wrap);
+    notifTimeout=setTimeout(()=>n.innerHTML='',850);
+  } else {
+    // Cortado: fondo negro, borde blanco, letras blancas, titila
+    const d=document.createElement('div');
+    d.textContent='Cortado';
+    d.style.cssText='border:1px solid #fff;background:#000;color:#fff;padding:3px 12px;animation:notif-cortado 0.9s steps(2) forwards;';
+    n.appendChild(d);
+    notifTimeout=setTimeout(()=>n.innerHTML='',950);
+  }
+}
+
+// ── Animaciones CVX ──────────────────────────────────────────────────────────
+function animCVX(tipo, btn){
+  const rect=btn.getBoundingClientRect();
+  const el=document.createElement('div');
+  el.className='anim-cvx';
+  el.style.left=rect.left+'px';
+  el.style.top=rect.top+'px';
+  if(tipo==='C'){
+    el.classList.add('anim-c');
+    el.style.animation='anim-copiar 0.7s ease-out forwards';
+  } else if(tipo==='V'){
+    el.classList.add('anim-v');
+    el.style.animation='anim-pegar 0.6s ease-out forwards';
+  } else {
+    el.classList.add('anim-x');
+    el.textContent='✕';
+    el.style.animation='anim-cortar 0.7s steps(3) forwards';
+    // X2 arriba
+    const x2=document.createElement('div');
+    x2.className='anim-x2';
+    x2.textContent='✕';
+    x2.style.left=(rect.left-25)+'px';
+    x2.style.top=(rect.top-20)+'px';
+    x2.style.animation='anim-cortar2 0.6s steps(3) forwards';
+    document.body.appendChild(x2);
+    setTimeout(()=>x2.remove(), 700);
+    // X3 abajo
+    const x3=document.createElement('div');
+    x3.className='anim-x2';
+    x3.textContent='✕';
+    x3.style.left=(rect.left+15)+'px';
+    x3.style.top=(rect.top+20)+'px';
+    x3.style.animation='anim-cortar2 0.75s steps(3) forwards';
+    document.body.appendChild(x3);
+    setTimeout(()=>x3.remove(), 800);
+  }
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 800);
+}
+
+// ── Ancho columna ────────────────────────────────────────────────────────────
+const anchos=['800px','500px','1400px'];
+let anchoIdx=0;
+function toggleAncho(){
+  anchoIdx=(anchoIdx+1)%anchos.length;
+  document.getElementById('e').style.maxWidth=anchos[anchoIdx];
+  document.getElementById('btn-ancho').style.opacity=anchoIdx===0?'':'1';
+}
+
+// ── Tipografía ────────────────────────────────────────────────────────────────
+const tipos=['Verdana, Geneva, sans-serif','Georgia, serif','Consolas, monospace',"'Courier New', Courier, monospace"];
+const tiposNombre=['Verdana','Georgia','Consolas','Courier New'];
+let tipoIdx=0;
+e.style.fontFamily=tipos[0];
+function rotarTipo(){
+  tipoIdx=(tipoIdx+1)%tipos.length;
+  e.style.fontFamily=tipos[tipoIdx];
+  document.getElementById('btn-tipo').title=tiposNombre[tipoIdx];
+}
+
+// ── Interlineado ──────────────────────────────────────────────────────────────
+let lineHeightApretado=false;
+function toggleLineHeight(){
+  lineHeightApretado=!lineHeightApretado;
+  document.getElementById('e').style.lineHeight=lineHeightApretado?'1.2':'1.6';
+  document.getElementById('btn-lh').style.opacity=lineHeightApretado?'1':'';
+}
+
+function modificarTamaño(subir){
+  const sel=window.getSelection();
+  if(!sel.rangeCount)return;
+  const node=sel.anchorNode.parentElement;
+  if(node&&node!==e){
+    let currentSize=window.getComputedStyle(node).fontSize;
+    let newSize=parseFloat(currentSize)*(subir?1.1:0.9);
+    node.style.fontSize=newSize+'px';
+  } else {
+    document.execCommand('fontSize',false,subir?'4':'2');
+  }
+}
+
+// ── Diálogo personalizado para nombre de archivo ──────────────────────────────
+function pedirNombre(defecto, cb){
+  const dlg=document.getElementById('dlg');
+  const overlay=document.getElementById('dlg-overlay');
+  const input=document.getElementById('dlg-input');
+  const ok=document.getElementById('dlg-ok');
+  const cancel=document.getElementById('dlg-cancel');
+  input.value=defecto||'';
+  dlg.style.display='block';
+  overlay.style.display='block';
+  setTimeout(()=>{input.focus();input.select();},50);
+  function cerrar(confirmar){
+    dlg.style.display='none';
+    overlay.style.display='none';
+    ok.onclick=null; cancel.onclick=null;
+    input.onkeydown=null;
+    if(confirmar && input.value.trim()) cb(input.value.trim());
+  }
+  ok.onclick=()=>cerrar(true);
+  cancel.onclick=()=>cerrar(false);
+  input.onkeydown=(ev)=>{
+    if(ev.key==='Enter') cerrar(true);
+    if(ev.key==='Escape') cerrar(false);
+  };
+}
+
+const dlgInfo={
+  html:`<b>HTML</b> (Formato Nativo)<br>
+· Conserva todo: Colores, Tamaños, Negritas, Cursivas, Saltos de línea, etc.<br>
+· No pierde ningún formato.`,
+  txt:`<b>TXT</b> (Texto Plano)<br>
+· Conserva: Saltos de línea.<br>
+· Pierde todo formato: Colores, Tamaños, Negritas, etc.<br>
+· Compatible con cualquier programa.`,
+  md:`<b>MD</b> (Markdown)<br>
+· Conserva: Negritas, Cursivas, Saltos de línea.<br>
+· Pierde: Colores, Tamaños, Subrayados.<br>
+· Compatible con GitHub, Notion, Obsidian.`
+};
+
+// ── Guardar ───────────────────────────────────────────────────────────────────
+function guardarHTML(){
+  document.getElementById('dlg-ext').textContent='.html';
+  document.getElementById('dlg-info').innerHTML=dlgInfo.html;
+  pedirNombre('',(nombre)=>{
+    const b=new Blob([e.innerHTML],{type:'text/html'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download=nombre+'.html';
+    a.click();
+  });
+}
+
+function guardarTXT(){
+  document.getElementById('dlg-ext').textContent='.txt';
+  document.getElementById('dlg-info').innerHTML=dlgInfo.txt;
+  pedirNombre('',(nombre)=>{
+    const b=new Blob([e.innerText],{type:'text/plain'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download=nombre+'.txt';
+    a.click();
+  });
+}
+
+function guardarMD(){
+  document.getElementById('dlg-ext').textContent='.md';
+  document.getElementById('dlg-info').innerHTML=dlgInfo.md;
+  pedirNombre('',(nombre)=>{
+    const md=htmlToMd(e.innerHTML);
+    const b=new Blob([md],{type:'text/plain'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download=nombre+'.md';
+    a.click();
+  });
+}
+
+function htmlToMd(html){
+  let md=html;
+  md=md.replace(/<h1[^>]*>(.*?)<\/h1>/gi,'# $1\n');
+  md=md.replace(/<h2[^>]*>(.*?)<\/h2>/gi,'## $1\n');
+  md=md.replace(/<h3[^>]*>(.*?)<\/h3>/gi,'### $1\n');
+  md=md.replace(/<strong[^>]*>(.*?)<\/strong>/gi,'**$1**');
+  md=md.replace(/<b[^>]*>(.*?)<\/b>/gi,'**$1**');
+  md=md.replace(/<em[^>]*>(.*?)<\/em>/gi,'*$1*');
+  md=md.replace(/<i[^>]*>(.*?)<\/i>/gi,'*$1*');
+  md=md.replace(/<u[^>]*>(.*?)<\/u>/gi,'_$1_');
+  md=md.replace(/<br\s*\/?>/gi,'\n');
+  md=md.replace(/<\/p>/gi,'\n\n');
+  md=md.replace(/<\/div>/gi,'\n');
+  md=md.replace(/<[^>]+>/g,'');
+  md=md.replace(/&nbsp;/g,' ');
+  md=md.replace(/&amp;/g,'&');
+  md=md.replace(/&lt;/g,'<');
+  md=md.replace(/&gt;/g,'>');
+  md=md.replace(/\n{3,}/g,'\n\n');
+  return md.trim();
+}
+
+function mdToHtml(md){
+  let html=md;
+  html=html.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  html=html.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  html=html.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  html=html.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  html=html.replace(/_(.+?)_/g,'<u>$1</u>');
+  html=html.replace(/\n\n/g,'</p><p>');
+  html=html.replace(/\n/g,'<br>');
+  return '<p>'+html+'</p>';
+}
+
+function cargarArchivo(i){
+  const r=new FileReader();
+  const nombre=i.files[0].name.toLowerCase();
+  r.onload=()=>{
+    let contenido=r.result;
+    if(nombre.endsWith('.md')){
+      contenido=mdToHtml(contenido);
+    } else if(nombre.endsWith('.txt')){
+      contenido=contenido.replace(/\n/g,'<br>');
+    }
+    e.innerHTML=contenido;
+    saveSnap();
+    localStorage.setItem('txt',e.innerHTML);
+  };
+  r.readAsText(i.files[0]);
+}
+</script>
+</body>
+</html>
