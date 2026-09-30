@@ -1,0 +1,3210 @@
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TEXTOX</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔴</text></svg>">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      font-family: sans-serif;
+    }
+
+    .panel {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 2rem;
+      min-width: 320px;
+      z-index: 999;
+      box-shadow: 0 8px 32px #000a;
+    }
+
+    button {
+      background: #1e1e1e;
+      border: 1px solid #444;
+      color: #eee;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      opacity: 0.85;
+    }
+    button:not(.btn-color):not(#btn-hide):not(#btn-hide-loco):not(#btn-insertar-loco):not(#btn-borrar-loco):not(#btn-fondo):not(#btn-fondo-loco):hover { background: #1a8fff !important; color: #111 !important; }
+    #btn-fondo:hover, #btn-fondo-loco:hover { opacity: 1; }
+    #btn-hide:hover { opacity: 1 !important; }
+    #btn-hide-loco:hover { opacity: 1 !important; }
+    #barra-derecha {
+      position: fixed;
+      top: 63px;
+      left: 10px;
+      opacity: 0.35;
+      transition: opacity 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: stretch;
+    }
+    #barra-derecha:hover { opacity: 1; }
+
+    /* Sidebar izquierdo */
+    #sidebar {
+      position: fixed;
+      top: 56px;
+      right: 2px;
+      opacity: 0.35;
+      transition: opacity 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+    #sidebar:hover { opacity: 1; }
+
+    /* Botones de color circulares */
+    .btn-color {
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 1px solid #555;
+      padding: 0;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .btn-color:hover { transform: scale(1.4); }
+    @keyframes blink-color {
+      0%,100%{ opacity:1; transform:scale(1); }
+      25%{ opacity:0.2; transform:scale(0.85); }
+      50%{ opacity:1; transform:scale(1); }
+      75%{ opacity:0.2; transform:scale(0.85); }
+    }
+    .btn-color-blink {
+      animation: blink-color 0.5s ease;
+    }
+
+    /* Editor principal */
+    #e {
+      max-width: 800px;
+      width: 100%;
+      padding: 3rem 2rem;
+      padding-right: 75px;
+      padding-left: 75px;
+      font-size: 1.35rem;
+      line-height: calc(1.35rem * 1.6);
+      outline: none;
+      min-height: 90vh;
+      text-align: left;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    /* Diálogo guardar */
+    #dlg {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 2rem;
+      min-width: 500px;
+      z-index: 1001;
+      box-shadow: 0 8px 32px #000a;
+    }
+    #dlg-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: #0006;
+    }
+    #dlg-input {
+      flex: 1;
+      box-sizing: border-box;
+      background: #111;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #eee;
+      padding: 0.5rem 0.7rem;
+      font-size: 1rem;
+      outline: none;
+    }
+    #dlg-cancel {
+      background: #333;
+      border: 1px solid #555;
+      color: #eee;
+      padding: 0.4rem 1.1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #dlg-ok {
+      background: #0a84ff;
+      border: none;
+      color: #fff;
+      padding: 0.4rem 1.1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* Animaciones CVX */
+    .anim-cvx {
+      position: fixed;
+      pointer-events: none;
+      z-index: 2000;
+      font-weight: bold;
+      color: #fff;
+      user-select: none;
+    }
+    .anim-c {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 5px solid #fff;
+      background: transparent;
+    }
+    .anim-v {
+      width: 80px;
+      height: 20px;
+      background: #fff;
+    }
+    .anim-x {
+      font-size: 4rem;
+      line-height: 1;
+    }
+    .anim-x2 {
+      font-size: 2.2rem;
+      line-height: 1;
+      color: #fff;
+      position: fixed;
+      pointer-events: none;
+      z-index: 2000;
+      user-select: none;
+    }
+    @keyframes anim-copiar {
+      0%   { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(-50px,-90px) scale(0.1); opacity: 0; }
+    }
+    @keyframes anim-pegar {
+      0%   { transform: translateX(0) scaleX(1); opacity: 1; }
+      100% { transform: translateX(-120px) scaleX(0.1); opacity: 0; }
+    }
+    @keyframes anim-cortar {
+      0%   { opacity:1; transform: rotate(0deg) scale(1); }
+      15%  { opacity:0; transform: rotate(20deg) scale(1.4); }
+      30%  { opacity:1; transform: rotate(-15deg) scale(0.8); }
+      45%  { opacity:0; transform: rotate(30deg) scale(1.6); }
+      60%  { opacity:1; transform: rotate(-25deg) scale(1.2); }
+      75%  { opacity:0; transform: rotate(10deg) scale(0.5); }
+      100% { opacity:0; transform: rotate(-40deg) scale(0.1); }
+    }
+    @keyframes anim-cortar2 {
+      0%   { opacity:1; transform: rotate(0deg) scale(1); }
+      20%  { opacity:0; transform: rotate(-30deg) scale(1.3); }
+      40%  { opacity:1; transform: rotate(25deg) scale(0.7); }
+      70%  { opacity:0; transform: rotate(-15deg) scale(0.4); }
+      100% { opacity:0; }
+    }
+
+    /* Notificaciones CVX */
+    #notif-cvx {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 2000;
+      font-size: 1rem;
+      font-family: monospace;
+    }
+    @keyframes notif-copiado {
+      0%   { opacity:1; transform: scale(1); }
+      70%  { opacity:1; transform: scale(1); }
+      100% { opacity:0; transform: scale(0.5); }
+    }
+    @keyframes notif-cortado {
+      0%   { opacity:1; }
+      20%  { opacity:0; }
+      40%  { opacity:1; }
+      60%  { opacity:0; }
+      80%  { opacity:1; }
+      100% { opacity:0; }
+    }
+    @keyframes notif-pegado-txt {
+      0%   { transform: translateX(0); opacity:1; }
+      60%  { transform: translateX(0); opacity:1; }
+      100% { transform: translateX(60px); opacity:0; }
+    }
+    @keyframes notif-pegado-bg {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    /* Tabla de atajos */
+    #tabla-atajos {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    #tabla-atajos td {
+      padding: 0.08rem 1rem;
+    }
+    #tabla-atajos td:first-child {
+      color: #aaa;
+      padding-right: 0.6rem;
+      text-align: right;
+    }
+
+    /* ── MODOLOCO ────────────────────────────────────────────────────────── */
+
+    #modo-loco-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: #000;
+    }
+    #modo-loco-overlay.mostrando {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #modo-loco-panel {
+      position: relative;
+      background: #000;
+      border: 3px solid #e8c840;
+      box-sizing: border-box;
+      overflow: hidden;
+      box-shadow: 0 0 60px #000c;
+      transition: width 0.25s ease, height 0.25s ease, background 0.2s ease;
+      flex-shrink: 0;
+    }
+    #modo-loco-panel.panel-amarillo {
+      background: #c9b458;
+      background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 3px);
+    }
+    .loco-frase {
+      position: absolute;
+      color: #fff;
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      overflow: hidden;
+      cursor: text;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .loco-frase.activa {
+      caret-color: inherit;
+      border: 1px solid #fff;
+    }
+    .formato-span {
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+      padding: 0 2px;
+    }
+    /* Marcador todavía vacío (solo un espacio invisible): sin relleno, así no se ve como un hueco de color */
+    .formato-span.marcador { padding: 0; }
+    /* Selección: sin el color del sistema; se dibuja un recuadro rosa (ver cajaSeleccion en el script) */
+    #e::selection, #e *::selection, .loco-frase::selection, .loco-frase *::selection { background: transparent; }
+    #caja-seleccion { position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: 650; pointer-events: none; }
+    #caja-seleccion div {
+      position: fixed;
+      box-sizing: border-box;
+      border: 2px solid #ff4fa3;
+      border-radius: 3px;
+      pointer-events: none;
+    }
+    /* Con fondo, la letra se ve negra. El color original queda guardado: al sacar el fondo vuelve solo. */
+    .loco-frase.con-fondo, .loco-frase.con-fondo * { color: #111 !important; }
+    #e .fondo-txt, #e .fondo-txt * { color: #111 !important; }
+    .oculto-export { opacity: 0 !important; }
+    /* Indicador del botón Fondo (círculo con el color, o X si no hay fondo): a la izquierda del botón, 2 segundos */
+    #indicador-fondo {
+      position: fixed;
+      z-index: 700;
+      display: none;
+      width: 19px;
+      height: 19px;
+      box-sizing: border-box;
+      pointer-events: none;
+    }
+    #indicador-fondo.con-color { border-radius: 50%; border: 1px solid #777; }
+    #indicador-fondo svg { display: block; }
+    /* Barra izquierda de MODOLOCO (✗, Nuevo, .PNG, .JSON, Abrir): misma posición que en TEXTOX */
+    #barra-loco-izq {
+      position: fixed;
+      top: 63px;
+      left: 10px;
+      z-index: 600;
+      opacity: 0.35;
+      transition: opacity 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: stretch;
+    }
+    #barra-loco-izq:hover { opacity: 1; }
+    #barra-loco-izq button {
+      width: auto;
+      height: auto;
+      padding: 2px 6px;
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+    /* Barra derecha de MODOLOCO (colores, B I U, fondo, tablero, 1-4, abc 0, cesto) */
+    #sidebar-loco {
+      position: fixed;
+      top: 80.5px;
+      right: 13px;
+      z-index: 600;
+      opacity: 0.35;
+      transition: opacity 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+    }
+    #sidebar-loco:hover, #sidebar-loco.borrando { opacity: 1; }
+    #sidebar-loco .tarjeta-res { width: 24px; height: 24px; }
+    #sidebar-loco #btn-res-loco { width: 26px; height: 26px; padding: 0; margin-top: 2px; }
+    /* Color Texto de MODOLOCO: círculo sólido con el color de la frase (lo pinta pintarBotonColorLoco) */
+    #btn-color-loco {
+      width: 24px; height: 24px;
+      background: #ffffff;
+      border: 2px solid #e8c840;
+    }
+    /* Cesto: sin recuadro, mismo color que el tablero */
+    #btn-borrar-loco {
+      position: fixed;
+      right: 13px;
+      top: 22.6px;
+      z-index: 600;
+      width: 30.8px;
+      height: 30.8px;
+      border-radius: 50%;
+      padding: 0;
+      border: none;
+      opacity: 1;
+      background: #000;
+      color: #e8c840;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #btn-borrar-loco svg { display: block; }
+    #modo-loco-panel.panel-amarillo ~ #btn-borrar-loco { background: #c9b458; color: #111; }
+    /* Modo borrar activo: cesto rojo dentro de un círculo rojo que se prende y apaga */
+    #btn-borrar-loco.activo {
+      color: #ff3b3b !important;
+      animation: pulso-borrar 1.3s ease-in-out infinite;
+    }
+    @keyframes pulso-borrar {
+      0%, 100% { box-shadow: 0 0 0 2px rgba(255,59,59,0.10), 0 0 0 rgba(255,59,59,0); }
+      50%      { box-shadow: 0 0 0 2px rgba(255,59,59,1),    0 0 10px rgba(255,59,59,0.7); }
+    }
+    /* En modo borrar, la frase bajo el mouse se marca como bloque rojo */
+    #modo-loco-panel.modo-borrar .loco-frase:not(.activa):hover {
+      background: #d61f1f !important;
+      color: #fff !important;
+    }
+    #modo-loco-panel.modo-borrar .loco-frase:not(.activa):hover .formato-span {
+      background: transparent !important;
+      color: #fff !important;
+    }
+    #btn-modoloco-logo, .btn-modoloco-estilo {
+      font-family: 'Arial Black', Impact, Consolas, monospace;
+      font-weight: 900;
+      letter-spacing: -1px;
+      font-size: 0.72rem;
+      color: #e8c840;
+      background: #111;
+      border: 2px solid #e8c840;
+      padding: 4px 7px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    #btn-panel-loco {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #111;
+      border: 2px solid #e8c840;
+      color: #e8c840;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tarjeta-res {
+      width: 28px;
+      height: 28px;
+      background: #111;
+      color: #fff;
+      border: 1px solid #e8c840;
+      font-size: 0.8rem;
+      cursor: pointer;
+      opacity: 0.85;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tarjeta-res:hover { opacity: 1; }
+    .btn-toggle-loco {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #111;
+      border: 2px solid #e8c840;
+      color: #e8c840;
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* TEXTOX: B / I / U encendidos (según lo seleccionado o el cursor): azul de resaltado */
+    button.fmt-activo { background: #1a8fff !important; color: #111 !important; border-color: #1a8fff !important; opacity: 1; }
+    .btn-toggle-loco.activo {
+      background: #e8c840;
+      color: #111;
+    }
+    #btn-play-loco { line-height: 0; background: #111; }
+    #btn-play-loco svg { display: block; width: 14px; height: 14px; fill: currentColor; }
+    .loco-frase.oculta-play { visibility: hidden; pointer-events: none; }
+    /* Los botones de MODOLOCO no se pueden "seleccionar" al arrastrar el mouse
+       por encima (así la selección queda solo dentro del recuadro de texto). */
+    #modo-loco-izq, #barra-loco-izq, #sidebar-loco, #btn-play-loco, #btn-borrar-loco {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    /* Los contenedores de botones son cajas transparentes que tapaban el recuadro
+       de texto (el hueco junto a Nuevo/.PNG, entre botones, etc.). Ahora los
+       contenedores dejan pasar el click y solo los botones lo capturan. */
+    #modo-loco-izq, #barra-loco-izq, #sidebar-loco { pointer-events: none; }
+    #modo-loco-izq button, #barra-loco-izq button, #sidebar-loco button, #btn-play-loco, #btn-borrar-loco { pointer-events: auto; }
+    #btn-tipo-loco {
+      background: #111;
+      color: #fff;
+      border: 1px solid #e8c840;
+      font-size: 0.65rem;
+      padding: 5px 6px;
+      cursor: pointer;
+    }
+    /* Cartelito con el nombre de la tipografía (abc 0), debajo del botón */
+    #etiqueta-tipo-loco {
+      position: fixed;
+      z-index: 601;
+      display: none;
+      color: #fff;
+      font-size: 0.75rem;
+      text-align: left;
+      white-space: nowrap;
+      pointer-events: none;
+      text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 6px #000; /* que se lea también sobre el tablero amarillo */
+    }
+    /* Cartelito con el nombre de la tipografía en TEXTOX: a la derecha de abc 0, pegado al botón */
+    #etiqueta-tipo-textox {
+      position: fixed;
+      z-index: 601;
+      display: none;
+      color: #fff;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      text-align: left;
+      white-space: nowrap;
+      pointer-events: none;
+      text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 6px #000;
+    }
+    #btn-insertar-loco {
+      position: fixed;
+      right: 8px;
+      top: 18px;
+      z-index: 600;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    #btn-insertar-loco:hover { opacity: 1; }
+    .vuelo-insertar-loco {
+      position: fixed;
+      z-index: 9999;
+      color: #e8c840;
+      font-family: 'Arial Black', Impact, Consolas, monospace;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      font-size: 1.1rem;
+      white-space: nowrap;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      height: 24px;
+      animation: vuelo-insertar-loco-anim 1.68s linear forwards;
+    }
+    @keyframes vuelo-insertar-loco-anim {
+      0%   { transform: translateX(0); opacity: 0; }
+      5%   { opacity: 1; }
+      85.7% { transform: translateX(-20vw); opacity: 1; }     /* empieza a desaparecer */
+      100% { transform: translateX(-23.3vw); opacity: 0; }    /* ya desapareció (3/5 del recorrido anterior) */
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Creepster&family=Pacifico&family=Permanent+Marker&family=UnifrakturCook:wght@700&family=VT323&family=Monoton&family=Special+Elite&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="barra-derecha">
+  <button onclick="toggleBotones()" id="btn-hide" style="background:#aa1111;opacity:0.6;">✗</button>
+  <button onclick="toggleAyudas()">Atajos</button>
+  <div style="height:12px"></div>
+  <button onclick="if(confirm('¿Borrar pantalla?')){e.innerText='';localStorage.removeItem('txt');}">Nuevo</button>
+  <button onclick="guardarHTML()">.HTML</button>
+  <button onclick="guardarTXT()">.TXT</button>
+  <button onclick="guardarMD()">.MD</button>
+  <button onclick="document.getElementById('f').click()">Abrir</button>
+  <input type="file" id="f" style="display:none" accept=".html,.txt,.md" onchange="cargarArchivo(this)">
+  <div style="height:12px"></div>
+  <button onclick="toggleAncho()" id="btn-ancho">←W→</button>
+  <button onclick="toggleLineHeight()" id="btn-lh">Linea</button>
+  <button onclick="rotarTipo()" id="btn-tipo" onmouseenter="mostrarEtiquetaTipoTextox()" onmouseleave="ocultarEtiquetaTipoTextox()">abc 0</button>
+  <div style="height:3px"></div>
+  <button onclick="document.execCommand('copy');animCVX('C',this);notifCVX('C')">C</button>
+  <button onclick="document.execCommand('paste');animCVX('V',this);notifCVX('V')">V</button>
+  <button onclick="document.execCommand('cut');animCVX('X',this);notifCVX('X')">X</button>
+  <div style="height:3px"></div>
+  <button onclick="Formatear()" title="FORMATEAR">__</button>
+  <button onclick="e.focus();document.execCommand('selectAll')">ALL</button>
+  <div style="height:4px"></div>
+</div>
+
+<!-- ── MODOLOCO ─────────────────────────────────────────────────────────── -->
+<div id="modo-loco-overlay">
+  <div id="modo-loco-panel"></div>
+  <div id="modo-loco-izq" style="position:fixed;left:20px;top:20px;z-index:600;">
+    <button onclick="salirModoLoco()" id="btn-modoloco-logo" class="btn-modoloco-estilo" title="Volver a TEXTOX">MODOLOCO</button>
+  </div>
+  <button onclick="toggleAnimacionLoco(this)" id="btn-play-loco" class="btn-toggle-loco" title="Mover al azar" style="position:fixed;left:50%;top:20px;transform:translateX(-50%);width:30px;height:30px;"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 2.2 L11.6 7 L4 11.8 Z"/></svg></button>
+  <div id="barra-loco-izq">
+    <button onclick="toggleBotonesLoco()" id="btn-hide-loco" title="Ocultar botones" style="background:#aa1111;opacity:0.6;">✗</button>
+    <div style="height:12px"></div>
+    <button onclick="nuevoModoLoco()" class="tarjeta-res">Nuevo</button>
+    <button onclick="exportarModoLocoPNG()" class="tarjeta-res">.PNG</button>
+    <button onclick="guardarModoLocoJSON()" class="tarjeta-res" title="Guardar la creación en un archivo">.JSON</button>
+    <button onclick="document.getElementById('input-abrir-loco').click()" class="tarjeta-res" title="Abrir una creación guardada">Abrir</button>
+    <input type="file" id="input-abrir-loco" accept=".json,application/json" style="display:none;" onchange="abrirModoLocoJSON(this)">
+  </div>
+  <button onclick="toggleBorrarLoco()" id="btn-borrar-loco" title="Borrar frases: click en una frase para quitarla">
+    <svg viewBox="0 0 24 24" width="19.8" height="19.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></svg>
+  </button>
+  <div id="sidebar-loco">
+    <button onmousedown="event.preventDefault()" onclick="ciclarColorLoco(this)" id="btn-color-loco" class="btn-color" title="Color Texto"></button>
+    <button onmousedown="event.preventDefault()" onclick="ciclarFondoLoco(this)" onmouseenter="hoverFondoLoco(this)" onmouseleave="ocultarIndicadorFondo()" id="btn-fondo-loco" class="btn-toggle-loco" title="Color Fondo" style="margin-top:6px;">F</button>
+    <button onmousedown="event.preventDefault()" onclick="toggleFormatoLoco('negrita',this)" id="btn-negrita-loco" class="btn-toggle-loco" title="Negrita" style="font-weight:bold;">B</button>
+    <button onmousedown="event.preventDefault()" onclick="toggleFormatoLoco('cursiva',this)" id="btn-cursiva-loco" class="btn-toggle-loco" title="Cursiva" style="font-style:italic;">I</button>
+    <button onmousedown="event.preventDefault()" onclick="toggleFormatoLoco('subrayado',this)" id="btn-subrayado-loco" class="btn-toggle-loco" title="Subrayado" style="text-decoration:underline;">U</button>
+    <button onmousedown="event.preventDefault()" onclick="cambiarTamañoLoco()" id="btn-tamano-loco" class="btn-toggle-loco" title="Tamaño Texto">2</button>
+    <div style="height:4px"></div>
+    <button onclick="togglePanelLoco(this)" id="btn-panel-loco" title="Color Tablero">
+      <svg viewBox="0 0 20 20" width="14" height="14">
+        <circle cx="10" cy="10" r="7.5" fill="none" stroke="#e8c840" stroke-width="1.6"/>
+        <circle cx="10" cy="10" r="3" fill="none" stroke="#e8c840" stroke-width="1.6"/>
+      </svg>
+    </button>
+    <button onclick="ciclarResolucionLoco()" id="btn-res-loco" class="tarjeta-res" title="Tamaño Tablero">
+      <svg viewBox="0 0 14 14" width="22" height="22" fill="none" stroke="#e8c840" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1L13 13M13 1L1 13"/><path d="M1 4.6V1H4.6M9.4 1H13V4.6M1 9.4V13H4.6M9.4 13H13V9.4"/></svg>
+    </button>
+    <div style="height:4px"></div>
+    <button onclick="rotarTipoLoco()" id="btn-tipo-loco" onmouseenter="mostrarEtiquetaTipoLoco()" onmouseleave="ocultarEtiquetaTipoLoco()">abc 0</button>
+  </div>
+  <div id="etiqueta-tipo-loco"></div>
+</div>
+<div id="indicador-fondo"></div>
+<div id="etiqueta-tipo-textox"></div>
+
+<!-- Panel de atajos -->
+<div id="ayudas" class="panel" contenteditable="false" style="display:none;flex-direction:row;padding:0;overflow:hidden;">
+  <div style="padding:0.6rem 0.6rem 0.6rem 0.6rem;">
+  <table id="tabla-atajos" style="padding:0;">
+  <tr><td>Alt Shift M</td><td>TEXTOX ↔ MODOLOCO</td></tr>
+  <tr><td>Alt Shift N</td><td>Insertar en MODOLOCO</td></tr>
+  <tr><td>Ctrl Z</td><td>Deshacer</td></tr>
+  <tr><td>Ctrl Y / Ctrl Shift Z</td><td>Rehacer</td></tr>
+  <tr><td>Alt Shift 1 2 3 4 5 6</td><td>Colores</td></tr>
+  <tr><td>Alt Shift F</td><td>Color de Fondo</td></tr>
+  <tr><td>Alt Shift T</td><td>Tamaño Texto</td></tr>
+  <tr><td>Alt Shift ↑ ↓</td><td>Tamaño Párrafo</td></tr>
+  <tr><td>Ctrl B / Ctrl K</td><td>Negrita</td></tr>
+  <tr><td>Ctrl I</td><td>Cursiva</td></tr>
+  <tr><td>Ctrl U</td><td>Subrayar</td></tr>
+  <tr><td>Ctrl L / R</td><td>Alinear Izquierda / Derecha</td></tr>
+  <tr><td>Ctrl E / J</td><td>Centrar / Justificar</td></tr>
+  <tr><td>Alt Shift X</td><td>Ocultar Botones</td></tr>
+  <tr><td>Alt Shift W</td><td>Ancho Columna</td></tr>
+  <tr><td>Alt Shift L</td><td>Interlineado</td></tr>
+  <tr><td>Alt Shift 0</td><td>Tipografía</td></tr>
+  <tr><td>Ctrl C / V / X</td><td>Copiar / Pegar / Cortar</td></tr>
+  <tr><td>Ctrl Space</td><td>Formatear</td></tr>
+  <tr><td>Ctrl A</td><td>Seleccionar Todo</td></tr>
+  <tr><td>Ctrl F</td><td>Búsqueda</td></tr>
+  <tr><td>F11</td><td>Pantalla Completa</td></tr>
+
+  </table>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:0.6rem 0.4rem;border-left:1px solid #333;min-width:28px;gap:0.5rem;background:#aa0000;">
+    <button onclick="toggleAyudas()" style="background:none;border:none;color:#fff;font-size:1rem;cursor:pointer;padding:0;line-height:1;">✕</button>
+    <span style="writing-mode:vertical-rl;font-family:'Courier New',Courier,monospace;font-size:0.95rem;color:#fff;letter-spacing:0.15em;white-space:nowrap;">&#160;Atajos de Teclado</span>
+  </div>
+</div>
+<div id="ayudas-overlay" style="display:none;position:fixed;inset:0;z-index:998;" onclick="toggleAyudas()"></div>
+
+<div id="notif-cvx"></div>
+
+<!-- Diálogo personalizado para nombre de archivo -->
+<div id="dlg">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.2rem;border-bottom:1px solid #444;padding-bottom:0.8rem;">
+    <span style="font-size:1.3rem;">🔴</span>
+    <strong style="font-size:1rem;letter-spacing:1px;">TEXTOX</strong>
+  </div>
+  <div style="margin-bottom:0.7rem;font-size:0.95rem;">Nombre para Guardar:</div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <input id="dlg-input" type="text" value="">
+    <span id="dlg-ext" style="color:#aaa;font-size:1rem;white-space:nowrap;"></span>
+  </div>
+  <div id="dlg-info" style="margin-top:1rem;font-size:0.85rem;color:#bbb;line-height:1.5;border-top:1px solid #333;padding-top:0.8rem;"></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:1rem;">
+    <button id="dlg-cancel">Cancelar</button>
+    <button id="dlg-ok">Aceptar</button>
+  </div>
+</div>
+<div id="dlg-overlay"></div>
+
+<button onclick="entrarModoLoco()" title="Ir a MODOLOCO" id="btn-textox-entrada" class="btn-modoloco-estilo" style="position:fixed;left:20px;top:20px;z-index:600;display:flex;align-items:center;gap:5px;border:none;">
+  <span style="font-size:0.9rem;">🔴</span>TEXTOX
+</button>
+
+<button onclick="enviarSeleccionAModoLoco(this)" id="btn-insertar-loco" title="Insertar la selección en MODOLOCO">
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <circle cx="12" cy="12" r="12" fill="#ffd21f"/>
+    <ellipse cx="8.3" cy="9.6" rx="1.5" ry="2.1" fill="#111"/>
+    <ellipse cx="15.7" cy="9.6" rx="1.5" ry="2.1" fill="#111"/>
+    <path d="M6.2 14 Q12 20.6 17.8 14 Z" fill="#111"/>
+  </svg>
+</button>
+
+<div id="sidebar">
+
+  <div style="display:flex;gap:3px;justify-content:center;">
+    <button onclick="doUndo()" title="Deshacer" style="background:#fff;border:none;color:#111;font-size:0.8rem;padding:0px 3px;border-radius:3px;cursor:pointer;">Z</button>
+    <button onclick="doRedo()" title="Rehacer" style="background:#fff;border:none;color:#111;font-size:0.8rem;padding:0px 3px;border-radius:3px;cursor:pointer;">Y</button>
+  </div>
+
+  <div style="height:5px"></div>
+
+  <button onclick="colorTextox('#ffffff',this)" class="btn-color" style="background:#ffffff;"></button>
+  <button onclick="colorTextox('#1a8fff',this)" class="btn-color" style="background:#1a8fff;"></button>
+  <button onclick="colorTextox('#aaee00',this)" class="btn-color" style="background:#aaee00;"></button>
+  <button onclick="colorTextox('#ff6600',this)" class="btn-color" style="background:#ff6600;"></button>
+  <button onclick="colorTextox('#ff00fe',this)" class="btn-color" style="background:#ff00fe;"></button>
+  <button onclick="colorTextox('#777777',this)" class="btn-color" style="background:#777777;"></button>
+  <button onmousedown="event.preventDefault()" onclick="ciclarFondoTextox(this)" onmouseenter="hoverFondoTextox(this)" onmouseleave="ocultarIndicadorFondo()" id="btn-fondo" title="Fondo" style="background:#111;">F</button>
+  <button onmousedown="event.preventDefault()" onclick="document.execCommand('bold');actualizarBotonesFormatoTextox()" id="btn-negrita-tx" title="Negrita"><b>B</b></button>
+  <button onmousedown="event.preventDefault()" onclick="document.execCommand('italic');actualizarBotonesFormatoTextox()" id="btn-cursiva-tx" title="Cursiva"><i>I</i></button>
+  <button onmousedown="event.preventDefault()" onclick="document.execCommand('underline');actualizarBotonesFormatoTextox()" id="btn-subrayado-tx" title="Subrayado"><u>U</u></button>
+
+  <div style="height:4px"></div>
+
+  <button onclick="setSize('0.9rem')">1</button>
+  <button onclick="setSize('1.35rem')">2</button>
+  <button onclick="setSize('3.1rem')">3</button>
+  <button onclick="setSize('4.34rem')">4</button>
+
+  <div style="height:4px"></div>
+
+  <button onclick="document.execCommand('justifyLeft')">◁</button>
+  <button onclick="document.execCommand('justifyRight')">▷</button>
+  <button onclick="document.execCommand('justifyCenter')">○</button>
+  <button onclick="document.execCommand('justifyFull')" style="font-size:0.7em">‖‖</button>
+
+  <div style="height:4px"></div>
+
+</div>
+
+<main contenteditable id="e"></main>
+
+<script>
+const e=document.getElementById('e');
+e.innerHTML=localStorage.getItem('txt')||'';
+
+// Posicionar el cursor al principio del texto al cargar
+e.focus();
+const initRange=document.createRange();
+initRange.setStart(e,0);
+initRange.collapse(true);
+const initSel=window.getSelection();
+initSel.removeAllRanges();
+initSel.addRange(initRange);
+
+// ── Sistema de historial (150 pasos) ──────────────────────────────────────────
+const HIST_MAX=150;
+const hist=[];
+let histIdx=-1;
+let snapTimer=null;
+
+function saveSnap(){
+  if(histIdx<hist.length-1) hist.splice(histIdx+1);
+  const snap=e.innerHTML;
+  if(hist.length>0&&hist[hist.length-1]===snap) return;
+  hist.push(snap);
+  if(hist.length>HIST_MAX) hist.shift();
+  histIdx=hist.length-1;
+}
+
+function scheduleSnap(){
+  clearTimeout(snapTimer);
+  snapTimer=setTimeout(saveSnap,300);
+}
+
+if(e.innerHTML) saveSnap();
+
+e.oninput=()=>{
+  if(typeof normalizarFondosTextox==='function') normalizarFondosTextox();
+  if(typeof limpiarMarcadoresTextox==='function') limpiarMarcadoresTextox();
+  localStorage.setItem('txt',e.innerHTML);
+  scheduleSnap();
+};
+
+// Los botones B / I / U de TEXTOX quedan azules cuando lo seleccionado (o el cursor) tiene ese formato.
+const FORMATOS_TEXTOX=[['btn-negrita-tx','bold'],['btn-cursiva-tx','italic'],['btn-subrayado-tx','underline']];
+function actualizarBotonesFormatoTextox(){
+  const sel=window.getSelection();
+  if(!sel.rangeCount || !e.contains(sel.anchorNode)) return;
+  FORMATOS_TEXTOX.forEach(([id,cmd])=>{
+    let on=false;
+    try{ on=document.queryCommandState(cmd); }catch(_){}
+    const b=document.getElementById(id);
+    if(b) b.classList.toggle('fmt-activo',!!on);
+  });
+}
+document.addEventListener('selectionchange',actualizarBotonesFormatoTextox);
+e.addEventListener('keyup',actualizarBotonesFormatoTextox);
+e.addEventListener('mouseup',actualizarBotonesFormatoTextox);
+
+// ── Panel de atajos ───────────────────────────────────────────────────────────
+function toggleAyudas(){
+  const p=document.getElementById('ayudas');
+  const o=document.getElementById('ayudas-overlay');
+  const visible=p.style.display==='flex';
+  p.style.display=visible?'none':'flex';
+  o.style.display=visible?'none':'block';
+}
+
+// ── Tamaño de texto ───────────────────────────────────────────────────────────
+// Interlineado por tamaño: el chico y el mediano comparten el mismo interlineado
+// normal. El chico y el grande además se achican cuando se aprieta "Línea"
+// (el mediano queda igual siempre, apretado o no).
+let lineHeightApretado=false;
+function lineHeightParaTamaño(size){
+  if(size==='0.9rem') return lineHeightApretado?'calc(1.35rem * 1.2)':'calc(1.35rem * 1.6)';
+  if(size==='3.1rem') return lineHeightApretado?'calc(3.1rem * 1.05)':'calc(3.1rem * 1.4)';
+  if(size==='4.34rem') return 'calc(4.34rem * 1)'; // el tamaño 4 lleva el interlineado mínimo para no pisar los renglones de arriba y abajo
+  if(size==='1.35rem') return 'calc(1.35rem * 1.6)';
+  return '';
+}
+
+// Tamaños de texto (1 2 3 4). El 4 es un 40% más grande que el 3.
+const TAMAÑOS_TEXTOX=['0.9rem','1.35rem','3.1rem','4.34rem'];
+const COLORES_TEXTO=['#ffffff','#1a8fff','#aaee00','#ff6600','#ff00fe','#777777'];
+// Alt Shift T: pasa al tamaño siguiente (1→2→3→4→1) en la selección o en lo que se escriba desde el cursor
+function ciclarTamañoTextox(){
+  const sel=window.getSelection();
+  if(!sel.rangeCount || !e.contains(sel.anchorNode)) return;
+  let nd=sel.getRangeAt(0).startContainer;
+  if(nd.nodeType===Node.TEXT_NODE) nd=nd.parentElement;
+  const px=parseFloat(window.getComputedStyle(nd).fontSize);
+  const REM=parseFloat(window.getComputedStyle(document.documentElement).fontSize)||16;
+  const idx=TAMAÑOS_TEXTOX.findIndex(t=>Math.abs(parseFloat(t)*REM-px)<1.5);
+  setSize(TAMAÑOS_TEXTOX[(idx+1)%TAMAÑOS_TEXTOX.length]);
+}
+// Alt Shift 1 al 6: colores de letra (pasan por colorTextox, igual que los botones)
+function atajoColorTextox(i){
+  const c=COLORES_TEXTO[i];
+  const btn=document.querySelector('button[onclick^="colorTextox(\''+c+'\'"]');
+  if(btn) colorTextox(c,btn);
+}
+function setSize(size){
+  const sel=window.getSelection();
+  if(!sel||sel.rangeCount===0)return;
+  const r0=sel.getRangeAt(0);
+  if(!e.contains(r0.commonAncestorContainer))return;
+  const lh=lineHeightParaTamaño(size);
+
+  if(sel.isCollapsed){
+    // Sin nada seleccionado: fija el tamaño para lo que se escriba de ahora en más,
+    // parado justo donde está el cursor.
+    saveSnap();
+    const span=document.createElement('span');
+    span.style.fontSize=size;
+    if(lh) span.style.lineHeight=lh;
+    const zw=document.createTextNode('\u200B'); // marcador invisible para "anclar" el cursor adentro
+    span.appendChild(zw);
+    r0.insertNode(span);
+    const nuevoRango=document.createRange();
+    nuevoRango.setStart(zw,zw.length);
+    nuevoRango.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(nuevoRango);
+    e.focus();
+    localStorage.setItem('txt',e.innerHTML);
+    return;
+  }
+
+  saveSnap();
+  const range=sel.getRangeAt(0);
+  const frag=range.extractContents();
+  const spans=frag.querySelectorAll('[style]');
+  spans.forEach(s=>{s.style.fontSize='';s.style.lineHeight='';});
+  const wrapper=document.createElement('span');
+  wrapper.style.fontSize=size;
+  if(lh) wrapper.style.lineHeight=lh;
+  wrapper.appendChild(frag);
+  range.insertNode(wrapper);
+  const newRange=document.createRange();
+  newRange.selectNodeContents(wrapper);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+  localStorage.setItem('txt',e.innerHTML);
+}
+
+function Formatear(){
+  const sel=window.getSelection();
+  if(!sel||sel.rangeCount===0||sel.isCollapsed)return;
+  const r0=sel.getRangeAt(0);
+  if(!e.contains(r0.commonAncestorContainer))return;
+  saveSnap();
+  const r=sel.getRangeAt(0);
+  const d=document.createElement('div');
+  d.appendChild(r.cloneContents());
+  let h=d.innerHTML;
+  h=h.replace(/<sup[^>]*>.*?<\/sup>/gi,'');
+  h=h.replace(/<sub[^>]*>.*?<\/sub>/gi,'');
+  h=h.replace(/<li[^>]*>(.*?)<\/li>/gi,'$1<br>');
+  h=h.replace(/<ul[^>]*>|<\/ul>|<ol[^>]*>|<\/ol>/gi,'');
+  h=h.replace(/\[\d+\]/g,'');
+  h=h.replace(/<br\s*\/?>/gi,'%%SALTO%%');
+  h=h.replace(/<\/div>/gi,'%%SALTO%%');
+  h=h.replace(/<\/p>/gi,'%%SALTO%%');
+  h=h.replace(/<[^>]+>/g,'');
+  h=h.replace(/&nbsp;/g,' ');
+  h=h.replace(/&amp;/g,'&');
+  h=h.replace(/&lt;/g,'<');
+  h=h.replace(/&gt;/g,'>');
+  h=h.replace(/%%SALTO%%/g,'<br>');
+  h=h.replace(/(<br>){3,}/g,'<br><br>');
+  r.deleteContents();
+  const temp=document.createElement('span');
+  temp.innerHTML=h;
+  r.insertNode(temp);
+  localStorage.setItem('txt',e.innerHTML);
+}
+
+// ── Deshacer / Rehacer (llamados desde botones) ───────────────────────────────
+function doUndo(){
+  clearTimeout(snapTimer);
+  if(histIdx===hist.length-1){
+    const snap=e.innerHTML;
+    if(hist.length===0||hist[hist.length-1]!==snap){
+      hist.push(snap);
+      if(hist.length>HIST_MAX) hist.shift();
+      histIdx=hist.length-1;
+    }
+  }
+  if(histIdx>0){
+    histIdx--;
+    e.innerHTML=hist[histIdx];
+    localStorage.setItem('txt',hist[histIdx]);
+  }
+}
+
+function doRedo(){
+  clearTimeout(snapTimer);
+  if(histIdx<hist.length-1){
+    histIdx++;
+    e.innerHTML=hist[histIdx];
+    localStorage.setItem('txt',hist[histIdx]);
+  }
+}
+
+// ── Teclado ───────────────────────────────────────────────────────────────────
+window.addEventListener('keydown',(x)=>{
+
+  // Bloquear Backspace/Delete cuando el foco no está en un campo editable,
+  // para evitar que el navegador vuelva a la página anterior
+  if(x.key==='Backspace'||x.key==='Delete'){
+    const t=document.activeElement;
+    const enEditable=t&&(t.isContentEditable||t.tagName==='INPUT'||t.tagName==='TEXTAREA');
+    if(!enEditable){
+      x.preventDefault();
+      return;
+    }
+  }
+
+  // Dentro de MODOLOCO se desactivan los atajos que son solo de TEXTOX y podrían
+  // pisar su contenido o cambiar su configuración: deshacer/rehacer, tamaños,
+  // interlineado, ancho de columna y tipografía. Alt+Shift+X pasa a ocultar los
+  // botones de MODOLOCO. Negrita/cursiva/subrayado, colores, alineación y
+  // copiar/pegar siguen funcionando.
+  if(document.getElementById('modo-loco-overlay').classList.contains('mostrando')){
+    const ctrl=(x.ctrlKey||x.metaKey)&&!x.altKey;
+    if(ctrl&&(x.code==='KeyZ'||x.code==='KeyY')){ x.preventDefault(); return; }
+    // Ctrl B / K, I, U: negrita, cursiva y subrayado de la frase entera (igual que los botones)
+    if(ctrl&&!x.shiftKey){
+      const tipoF={KeyB:'negrita',KeyK:'negrita',KeyI:'cursiva',KeyU:'subrayado'}[x.code];
+      if(tipoF){ x.preventDefault(); toggleFormatoLoco(tipoF,document.getElementById('btn-'+tipoF+'-loco')); return; }
+    }
+    if(x.altKey&&x.shiftKey){
+      // Alt+Shift+X: ocultar/mostrar los botones de MODOLOCO (igual que la ✗)
+      if(x.code==='KeyX'){ x.preventDefault(); toggleBotonesLoco(); return; }
+      // Alt+Shift+M: volver a TEXTOX (igual que el botón MODOLOCO de arriba a la izquierda)
+      if(x.code==='KeyM'){ x.preventDefault(); salirModoLoco(); e.focus(); return; }
+      // Alt+Shift+F: cambiar el color de Fondo (igual que el botón F)
+      if(x.code==='KeyF'){ x.preventDefault(); ciclarFondoLoco(document.getElementById('btn-fondo-loco')); return; }
+      // Alt+Shift+1 al 6: color de la frase (igual que el botón de color)
+      if(/^Digit[1-6]$/.test(x.code)){ x.preventDefault(); colorLocoAtajo(+x.code.slice(5)-1); return; }
+      // Alt+Shift+T: tamaño del texto de la frase (igual que el botón de tamaño)
+      if(x.code==='KeyT'){ x.preventDefault(); cambiarTamañoLoco(); return; }
+      // Interlineado, ancho de columna, tipografía y N (insertar en MODOLOCO): desactivados
+      if(['ArrowUp','ArrowDown','KeyL','KeyW','Digit0','KeyN'].includes(x.code)){ x.preventDefault(); return; }
+    }
+  }
+
+  // Deshacer / Rehacer
+  if((x.ctrlKey||x.metaKey)&&!x.altKey){
+    if(x.code==='KeyZ'&&!x.shiftKey){
+      x.preventDefault();
+      doUndo();
+      return;
+    }
+    if(x.code==='KeyY'||(x.code==='KeyZ'&&x.shiftKey)){
+      x.preventDefault();
+      doRedo();
+      return;
+    }
+  }
+
+  // Atajos con Alt + Shift
+  if(x.altKey&&x.shiftKey){
+    if(/^Digit[1-6]$/.test(x.code)){x.preventDefault();atajoColorTextox(+x.code.slice(5)-1)}
+    else if(x.code==='KeyT'){x.preventDefault();ciclarTamañoTextox()}
+    else if(x.code==='ArrowUp'){x.preventDefault();modificarTamaño(true)}
+    else if(x.code==='ArrowDown'){x.preventDefault();modificarTamaño(false)}
+    else if(x.code==='KeyL'){x.preventDefault();toggleLineHeight()}
+    else if(x.code==='KeyW'){x.preventDefault();toggleAncho()}
+    else if(x.code==='KeyX'){x.preventDefault();toggleBotones()}
+    else if(x.code==='Digit0'){x.preventDefault();rotarTipo()}
+    else if(x.code==='KeyF'){x.preventDefault();ciclarFondoTextox(document.getElementById('btn-fondo'))}
+    else if(x.code==='KeyM'){x.preventDefault();entrarModoLoco();return;}
+    else if(x.code==='KeyN'){x.preventDefault();enviarSeleccionAModoLoco(document.getElementById('btn-insertar-loco'));return;}
+    
+    // ¡Blindaje de guardado automático para Alt + Shift!
+    localStorage.setItem('txt',e.innerHTML);
+  }
+  
+  // Atajos con Ctrl
+  if(x.ctrlKey||x.metaKey){
+    const c=x.code;
+    if(c==='KeyB'||c==='KeyK'){x.preventDefault();document.execCommand('bold',false,null)}
+    else if(c==='KeyI'){x.preventDefault();document.execCommand('italic',false,null)}
+    else if(c==='KeyU'){x.preventDefault();document.execCommand('underline',false,null)}
+    else if(c==='KeyL'){x.preventDefault();document.execCommand('justifyLeft',false,null)}
+    else if(c==='KeyE'){x.preventDefault();document.execCommand('justifyCenter',false,null)}
+    else if(c==='KeyR'){x.preventDefault();document.execCommand('justifyRight',false,null)}
+    else if(c==='KeyJ'){x.preventDefault();document.execCommand('justifyFull',false,null)}
+    else if(c==='Space'){x.preventDefault();Formatear()}
+    else if(c==='KeyC'&&!x.shiftKey){setTimeout(()=>notifCVX('C'),50)}
+    else if(c==='KeyV'&&!x.shiftKey){setTimeout(()=>notifCVX('V'),50)}
+    else if(c==='KeyX'&&!x.shiftKey&&!x.altKey){setTimeout(()=>notifCVX('X'),50)}
+    
+    localStorage.setItem('txt',e.innerHTML);
+  }
+});
+
+function blinkColor(btn){
+  btn.classList.remove('btn-color-blink');
+  void btn.offsetWidth;
+  btn.classList.add('btn-color-blink');
+  btn.addEventListener('animationend',()=>btn.classList.remove('btn-color-blink'),{once:true});
+}
+
+// ── Ocultar botones ───────────────────────────────────────────────────────────
+let botonesOcultos=false;
+function toggleBotones(){
+  botonesOcultos=!botonesOcultos;
+  const barra=document.getElementById('btn-hide').parentElement;
+  Array.from(barra.children).forEach(el=>{
+    if(el.id!=='btn-hide') el.style.visibility=botonesOcultos?'hidden':'visible';
+  });
+  document.getElementById('sidebar').style.visibility=botonesOcultos?'hidden':'visible';
+  document.getElementById('btn-hide').style.opacity=botonesOcultos?'0.4':'';
+  barra.style.opacity=botonesOcultos?'0.7':'';
+}
+
+// ── Notificaciones CVX ───────────────────────────────────────────────────────
+let notifTimeout=null;
+function notifCVX(tipo){
+  const n=document.getElementById('notif-cvx');
+  n.innerHTML='';
+  clearTimeout(notifTimeout);
+  if(tipo==='C'){
+    // Copiado: fondo negro, borde blanco, letras blancas, se achica y desaparece
+    const d=document.createElement('div');
+    d.textContent='Copiado';
+    d.style.cssText='border:1px solid #fff;background:#000;color:#fff;padding:3px 12px;animation:notif-copiado 1s ease-out forwards;';
+    n.appendChild(d);
+    notifTimeout=setTimeout(()=>n.innerHTML='',1000);
+  } else if(tipo==='V'){
+    // Pegado: fondo blanco, borde negro, letras negras, texto barre derecha fondo barre izquierda
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:relative;overflow:hidden;border:1px solid #000;';
+    const bg=document.createElement('div');
+    bg.style.cssText='position:absolute;inset:0;background:#fff;animation:notif-pegado-bg 0.8s ease-in forwards;';
+    const txt=document.createElement('div');
+    txt.textContent='Pegado';
+    txt.style.cssText='position:relative;color:#000;padding:3px 12px;animation:notif-pegado-txt 0.8s ease-in forwards;';
+    wrap.appendChild(bg);
+    wrap.appendChild(txt);
+    n.appendChild(wrap);
+    notifTimeout=setTimeout(()=>n.innerHTML='',850);
+  } else {
+    // Cortado: fondo negro, borde blanco, letras blancas, titila
+    const d=document.createElement('div');
+    d.textContent='Cortado';
+    d.style.cssText='border:1px solid #fff;background:#000;color:#fff;padding:3px 12px;animation:notif-cortado 0.9s steps(2) forwards;';
+    n.appendChild(d);
+    notifTimeout=setTimeout(()=>n.innerHTML='',950);
+  }
+}
+
+// ── Animaciones CVX ──────────────────────────────────────────────────────────
+function animCVX(tipo, btn){
+  const rect=btn.getBoundingClientRect();
+  const el=document.createElement('div');
+  el.className='anim-cvx';
+  el.style.left=rect.left+'px';
+  el.style.top=rect.top+'px';
+  if(tipo==='C'){
+    el.classList.add('anim-c');
+    el.style.animation='anim-copiar 0.7s ease-out forwards';
+  } else if(tipo==='V'){
+    el.classList.add('anim-v');
+    el.style.animation='anim-pegar 0.6s ease-out forwards';
+  } else {
+    el.classList.add('anim-x');
+    el.textContent='✕';
+    el.style.animation='anim-cortar 0.7s steps(3) forwards';
+    // X2 arriba
+    const x2=document.createElement('div');
+    x2.className='anim-x2';
+    x2.textContent='✕';
+    x2.style.left=(rect.left-25)+'px';
+    x2.style.top=(rect.top-20)+'px';
+    x2.style.animation='anim-cortar2 0.6s steps(3) forwards';
+    document.body.appendChild(x2);
+    setTimeout(()=>x2.remove(), 700);
+    // X3 abajo
+    const x3=document.createElement('div');
+    x3.className='anim-x2';
+    x3.textContent='✕';
+    x3.style.left=(rect.left+15)+'px';
+    x3.style.top=(rect.top+20)+'px';
+    x3.style.animation='anim-cortar2 0.75s steps(3) forwards';
+    document.body.appendChild(x3);
+    setTimeout(()=>x3.remove(), 800);
+  }
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 800);
+}
+
+// ── Ancho columna ────────────────────────────────────────────────────────────
+const anchos=['800px','500px','1400px'];
+let anchoIdx=0;
+function toggleAncho(){
+  anchoIdx=(anchoIdx+1)%anchos.length;
+  document.getElementById('e').style.maxWidth=anchos[anchoIdx];
+  document.getElementById('btn-ancho').style.opacity=anchoIdx===0?'':'1';
+}
+
+// ── Tipografía ────────────────────────────────────────────────────────────────
+const tipos=['Verdana, Geneva, sans-serif','Georgia, serif','Consolas, monospace',"'Courier New', Courier, monospace"];
+const tiposNombre=['Verdana','Georgia','Consolas','Courier New'];
+let tipoIdx=0;
+e.style.fontFamily=tipos[0];
+function rotarTipo(){
+  tipoIdx=(tipoIdx+1)%tipos.length;
+  e.style.fontFamily=tipos[tipoIdx];
+  document.getElementById('btn-tipo').title=tiposNombre[tipoIdx];
+  mostrarEtiquetaTipoTextox(2); // avisa a qué tipografía pasó (2 segundos)
+}
+// Cartelito a la derecha de abc 0. Con el mouse encima se ve mientras está encima;
+// al apretar el botón (o Alt Shift 0) se ve 2 segundos.
+let etiquetaTipoTxTimer=null;
+function mostrarEtiquetaTipoTextox(segundos){
+  const et=document.getElementById('etiqueta-tipo-textox');
+  const b=document.getElementById('btn-tipo');
+  if(!et||!b) return;
+  clearTimeout(etiquetaTipoTxTimer); etiquetaTipoTxTimer=null;
+  et.textContent=tiposNombre[tipoIdx];
+  const r=b.getBoundingClientRect();
+  et.style.left=(r.right+4)+'px';
+  et.style.top=(r.top+r.height/2)+'px';
+  et.style.transform='translateY(-50%)';
+  et.style.display='block';
+  if(segundos) etiquetaTipoTxTimer=setTimeout(ocultarEtiquetaTipoTextox,segundos*1000);
+}
+function ocultarEtiquetaTipoTextox(){
+  clearTimeout(etiquetaTipoTxTimer); etiquetaTipoTxTimer=null;
+  const et=document.getElementById('etiqueta-tipo-textox');
+  if(et) et.style.display='none';
+}
+
+// ── Interlineado ──────────────────────────────────────────────────────────────
+function toggleLineHeight(){
+  lineHeightApretado=!lineHeightApretado;
+  document.getElementById('e').style.lineHeight=lineHeightApretado?'calc(1.35rem * 1.2)':'calc(1.35rem * 1.6)';
+  document.getElementById('btn-lh').style.opacity=lineHeightApretado?'1':'';
+  // Actualizar también el texto YA escrito en tamaño 1 y 3 (el 2 se deja como está).
+  e.querySelectorAll('span[style*="font-size"]').forEach(sp=>{
+    const fs=sp.style.fontSize;
+    if(fs==='0.9rem'||fs==='3.1rem'){
+      sp.style.lineHeight=lineHeightParaTamaño(fs);
+    }
+  });
+  localStorage.setItem('txt',e.innerHTML);
+}
+
+// Encuentra el rango que ocupa el "párrafo" (línea) donde está el cursor,
+// sin necesidad de que el usuario haya seleccionado nada.
+function obtenerRangoBloqueActual(sel){
+  const range=sel.getRangeAt(0);
+  let nodo=range.startContainer;
+  if(nodo.nodeType===Node.TEXT_NODE) nodo=nodo.parentElement;
+  // Subir hasta encontrar un hijo directo del editor (ej: un <div> de línea)
+  while(nodo&&nodo.parentElement&&nodo.parentElement!==e){
+    nodo=nodo.parentElement;
+  }
+  if(nodo&&nodo!==e){
+    const r=document.createRange();
+    r.selectNodeContents(nodo);
+    return r;
+  }
+  // El texto está suelto directamente dentro del editor (sin <div> propio):
+  // delimitar la línea usando los <br> más cercanos antes/después del cursor.
+  const hijos=Array.from(e.childNodes);
+  let ancla=range.startContainer;
+  while(ancla&&ancla.parentNode!==e) ancla=ancla.parentNode;
+  const idxAncla=hijos.indexOf(ancla);
+  const r=document.createRange();
+  if(idxAncla===-1){
+    r.selectNodeContents(e);
+    return r;
+  }
+  let inicio=0, fin=hijos.length;
+  for(let i=idxAncla;i>=0;i--){ if(hijos[i].nodeName==='BR'){ inicio=i+1; break; } }
+  for(let i=idxAncla;i<hijos.length;i++){ if(hijos[i].nodeName==='BR'){ fin=i; break; } }
+  if(inicio<fin){
+    r.setStartBefore(hijos[inicio]);
+    r.setEndAfter(hijos[fin-1]);
+  } else {
+    r.selectNodeContents(e);
+  }
+  return r;
+}
+
+function modificarTamaño(subir){
+  const sel=window.getSelection();
+  if(!sel.rangeCount)return;
+  const factor=subir?1.1:0.9;
+  const range=sel.getRangeAt(0);
+
+  // Si el usuario seleccionó texto a mano, se respeta esa selección.
+  // Si no, se toma automáticamente todo el párrafo/línea donde está el cursor.
+  const rangoObjetivo = range.collapsed ? obtenerRangoBloqueActual(sel) : range;
+  if(!rangoObjetivo || rangoObjetivo.collapsed) return;
+
+  saveSnap();
+  let refNodo=rangoObjetivo.startContainer;
+  if(refNodo.nodeType===Node.TEXT_NODE) refNodo=refNodo.parentElement;
+  const currentSize=parseFloat(window.getComputedStyle(refNodo||e).fontSize);
+  const newSize=currentSize*factor;
+
+  const frag=rangoObjetivo.extractContents();
+  frag.querySelectorAll('[style]').forEach(s=>{ s.style.fontSize=''; s.style.lineHeight=''; });
+  const wrapper=document.createElement('span');
+  wrapper.style.fontSize=newSize+'px';
+  wrapper.style.lineHeight=(newSize*1.6)+'px';
+  wrapper.appendChild(frag);
+  rangoObjetivo.insertNode(wrapper);
+
+  const nuevoRango=document.createRange();
+  nuevoRango.selectNodeContents(wrapper);
+  nuevoRango.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(nuevoRango);
+
+  localStorage.setItem('txt',e.innerHTML);
+}
+
+// ── Diálogo personalizado para nombre de archivo ──────────────────────────────
+function pedirNombre(defecto, cb){
+  const dlg=document.getElementById('dlg');
+  const overlay=document.getElementById('dlg-overlay');
+  const input=document.getElementById('dlg-input');
+  const ok=document.getElementById('dlg-ok');
+  const cancel=document.getElementById('dlg-cancel');
+  input.value=defecto||'';
+  dlg.style.display='block';
+  overlay.style.display='block';
+  setTimeout(()=>{input.focus();input.select();},50);
+  function cerrar(confirmar){
+    dlg.style.display='none';
+    overlay.style.display='none';
+    ok.onclick=null; cancel.onclick=null;
+    input.onkeydown=null;
+    if(confirmar && input.value.trim()) cb(input.value.trim());
+  }
+  ok.onclick=()=>cerrar(true);
+  cancel.onclick=()=>cerrar(false);
+  input.onkeydown=(ev)=>{
+    if(ev.key==='Enter') cerrar(true);
+    if(ev.key==='Escape') cerrar(false);
+  };
+}
+
+const dlgInfo={
+  html:`<b>HTML</b> (Formato Nativo)<br>
+· Conserva todo: Colores, Tamaños, Negritas, Cursivas, Saltos de línea, etc.<br>
+· No pierde ningún formato.`,
+  txt:`<b>TXT</b> (Texto Plano)<br>
+· Conserva: Saltos de línea.<br>
+· Pierde todo formato: Colores, Tamaños, Negritas, etc.<br>
+· Compatible con cualquier programa.`,
+  md:`<b>MD</b> (Markdown)<br>
+· Conserva: Negritas, Cursivas, Saltos de línea.<br>
+· Pierde: Colores, Tamaños, Subrayados.<br>
+· Compatible con GitHub, Notion, Obsidian.`
+};
+
+// ── Guardar ───────────────────────────────────────────────────────────────────
+function guardarHTML(){
+  document.getElementById('dlg-ext').textContent='.html';
+  document.getElementById('dlg-info').innerHTML=dlgInfo.html;
+  pedirNombre('',(nombre)=>{
+    const b=new Blob([htmlExportTextox()],{type:'text/html'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download=nombre+'.html';
+    a.click();
+  });
+}
+
+function guardarTXT(){
+  document.getElementById('dlg-ext').textContent='.txt';
+  document.getElementById('dlg-info').innerHTML=dlgInfo.txt;
+  pedirNombre('',(nombre)=>{
+    const b=new Blob([e.innerText.replace(/\u200B/g,'')],{type:'text/plain'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download=nombre+'.txt';
+    a.click();
+  });
+}
+
+function guardarMD(){
+  document.getElementById('dlg-ext').textContent='.md';
+  document.getElementById('dlg-info').innerHTML=dlgInfo.md;
+  pedirNombre('',(nombre)=>{
+    const md=htmlToMd(e.innerHTML.replace(/\u200B/g,''));
+    const b=new Blob([md],{type:'text/plain'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download=nombre+'.md';
+    a.click();
+  });
+}
+
+function htmlToMd(html){
+  let md=html;
+  md=md.replace(/<h1[^>]*>(.*?)<\/h1>/gi,'# $1\n');
+  md=md.replace(/<h2[^>]*>(.*?)<\/h2>/gi,'## $1\n');
+  md=md.replace(/<h3[^>]*>(.*?)<\/h3>/gi,'### $1\n');
+  md=md.replace(/<strong[^>]*>(.*?)<\/strong>/gi,'**$1**');
+  md=md.replace(/<b[^>]*>(.*?)<\/b>/gi,'**$1**');
+  md=md.replace(/<em[^>]*>(.*?)<\/em>/gi,'*$1*');
+  md=md.replace(/<i[^>]*>(.*?)<\/i>/gi,'*$1*');
+  md=md.replace(/<u[^>]*>(.*?)<\/u>/gi,'_$1_');
+  md=md.replace(/<br\s*\/?>/gi,'\n');
+  md=md.replace(/<\/p>/gi,'\n\n');
+  md=md.replace(/<\/div>/gi,'\n');
+  md=md.replace(/<[^>]+>/g,'');
+  md=md.replace(/&nbsp;/g,' ');
+  md=md.replace(/&amp;/g,'&');
+  md=md.replace(/&lt;/g,'<');
+  md=md.replace(/&gt;/g,'>');
+  md=md.replace(/\n{3,}/g,'\n\n');
+  return md.trim();
+}
+
+function mdToHtml(md){
+  let html=md;
+  html=html.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  html=html.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  html=html.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  html=html.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  html=html.replace(/_(.+?)_/g,'<u>$1</u>');
+  html=html.replace(/\n\n/g,'</p><p>');
+  html=html.replace(/\n/g,'<br>');
+  return '<p>'+html+'</p>';
+}
+
+function cargarArchivo(i){
+  const r=new FileReader();
+  const nombre=i.files[0].name.toLowerCase();
+  r.onload=()=>{
+    let contenido=r.result;
+    if(nombre.endsWith('.md')){
+      contenido=mdToHtml(contenido);
+    } else if(nombre.endsWith('.txt')){
+      contenido=contenido.replace(/\n/g,'<br>');
+    }
+    e.innerHTML=contenido;
+    normalizarFondosTextox();
+    saveSnap();
+    localStorage.setItem('txt',e.innerHTML);
+  };
+  r.readAsText(i.files[0]);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// ── MODOLOCO ─────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════
+const LOCO_KEY='modolocoFrases';
+const LOCO_RES_KEY='modolocoResolucion';
+const LOCO_TAMAÑOS=[['0.9rem',65],['1.35rem',27],['3.1rem',8]];
+// Botón de tamaño (1 2 3 4): el 4 es un 40% más grande que el 3. Las frases nuevas nacen con el último elegido.
+const LOCO_TAMAÑOS_BOTON=['0.9rem','1.35rem','3.1rem','4.34rem'];
+const LOCO_TAMAÑO_KEY='modolocoTamano';
+let locoTamañoElegido=(()=>{ const v=localStorage.getItem(LOCO_TAMAÑO_KEY); return LOCO_TAMAÑOS_BOTON.includes(v)?v:null; })();
+
+let locoPanel=null;
+let locoFraseActiva=null;
+let locoFrases=[]; // {html,xPct,yPct,size,color,align,anchoPx,altoPx,unaLinea,seed,tipo?}  (tipo = índice en tiposLoco, solo en modo azar)
+
+// Tamaño interno del panel al que va a llegar (no el que tiene a mitad de la
+// animación de cambio de tablero). Así el reacomodo sale bien con un solo click.
+function dimsPanelLoco(){
+  const w=parseFloat(locoPanel.style.width), h=parseFloat(locoPanel.style.height);
+  if(isNaN(w)||isNaN(h)) return {pw:locoPanel.clientWidth,ph:locoPanel.clientHeight};
+  return {pw:w-6,ph:h-6}; // 3px de borde a cada lado
+}
+
+function elegirPeso(lista){
+  const total=lista.reduce((s,x)=>s+x[1],0);
+  let r=Math.random()*total;
+  for(const [val,peso] of lista){ if((r-=peso)<=0) return val; }
+  return lista[0][0];
+}
+
+const LOCO_MARGEN_PX=36; // ~3 letras de margen contra el borde del panel (para el ancho máximo)
+const LOCO_MARGEN_PCT=2.5; // margen proporcional para ubicar las cajas (no fijo en px, así no desperdicia espacio en paneles chicos)
+
+// Cantidad de caracteres (aprox.) que entran en la línea, con su peso de aparición.
+// El tamaño grande (3.1rem) se mantiene angosto; los otros a veces son bien anchos.
+const LOCO_CHARS_ANCHO={
+  '0.9rem':[[20,25],[32,35],[46,25],[64,15]],
+  '1.35rem':[[16,25],[24,35],[34,25],[46,15]],
+  '3.1rem':[[10,35],[14,40],[17,25]],
+  '4.34rem':[[7,35],[10,40],[12,25]]
+};
+
+function calcularCajaLoco(size,pw){
+  const pxPorRem={'0.9rem':14.4,'1.35rem':21.6,'3.1rem':49.6,'4.34rem':69.44}[size]||21.6;
+  const maxAncho=Math.max(90,pw-2*LOCO_MARGEN_PX);
+  const chars=elegirPeso(LOCO_CHARS_ANCHO[size]||LOCO_CHARS_ANCHO['1.35rem']);
+  let anchoPx=Math.round(chars*pxPorRem*0.55);
+  anchoPx=Math.min(anchoPx,maxAncho);
+  const altoPx=Math.round(pxPorRem*1.5); // una sola línea
+  return {anchoPx,altoPx};
+}
+
+// ── Ancho a medida de lo escrito ───────────────────────────────────────────
+// Cada bloque de una sola línea mide lo que ocupa su texto (con la tipografía y el
+// tamaño que tenga) + un poco de holgura, en vez de un ancho fijo. El único tope es
+// el ancho del tablero menos los márgenes.
+const LOCO_HOLGURA_PX=8;     // aire extra a la derecha (cursor, cursiva, negrita, redondeos)
+const LOCO_ANCHO_MIN_PX=24;  // caja vacía: que se vea y se pueda ubicar el cursor
+function medirAnchoFraseLoco(div){
+  const prev=div.style.width;
+  div.style.width='max-content';
+  const w=Math.ceil(div.getBoundingClientRect().width);
+  div.style.width=prev;
+  return w;
+}
+// Ajusta UNA caja de una línea a su contenido, creciendo (o achicándose) hacia los dos
+// lados a partir de su centro. Si al crecer se pasa de los márgenes del tablero, se
+// corre lo justo hacia adentro. Devuelve {w,xPct}.
+function ajustarAnchoUnaCajaLoco(div){
+  const {pw}=dimsPanelLoco();
+  const maxAncho=Math.max(90,pw-2*LOCO_MARGEN_PX);
+  const mx=LOCO_MARGEN_PCT/100*pw;
+  const wAntes=parseFloat(div.style.width)||0;
+  const leftAntes=parseFloat(div.style.left)/100*pw;
+  // centro deseado: el que se guardó al crear la caja, o el actual
+  const cx = div._cxPct!==undefined ? div._cxPct/100*pw : leftAntes+wAntes/2;
+  const w=Math.min(maxAncho, Math.max(LOCO_ANCHO_MIN_PX, medirAnchoFraseLoco(div)+LOCO_HOLGURA_PX));
+  div.style.width=w+'px';
+  const left=Math.min(Math.max(cx-w/2,mx), Math.max(mx,pw-mx-w));
+  div.style.left=(left/pw*100)+'%';
+  return {w,xPct:left/pw*100};
+}
+// Vuelve a ajustar todas las cajas de una línea (por ejemplo al cambiar de tipografía).
+function ajustarAnchosFrasesLoco(){
+  if(!locoPanel) return;
+  Array.from(locoPanel.querySelectorAll('.loco-frase')).forEach(div=>{
+    const f=div._frase;
+    if(f && !f.unaLinea) return; // las de varias líneas (insertadas desde TEXTOX) no se tocan
+    if(div._multilinea) return;
+    const r=ajustarAnchoUnaCajaLoco(div);
+    if(f){ f.anchoPx=r.w; f.xPct=r.xPct; }
+    else if(div._setPos){ div._setPos(r.xPct,parseFloat(div.style.top)); }
+  });
+}
+
+// ── Ubicación sin superposición ─────────────────────────────────────────────
+const LOCO_GAP_PX=4;
+function costoSolapeLoco(r,obst){
+  const g=LOCO_GAP_PX;
+  const rx=r.x-g, ry=r.y-g, rw=r.w+2*g, rh=r.h+2*g;
+  let total=0;
+  for(const o of obst){
+    const ox=Math.min(rx+rw,o.x+o.w)-Math.max(rx,o.x);
+    const oy=Math.min(ry+rh,o.y+o.h)-Math.max(ry,o.y);
+    if(ox>0 && oy>0) total+=ox*oy;
+  }
+  return total;
+}
+// Busca un lugar sin pisar a nadie; si no hay, el que menos pisa.
+function buscarLugarLibre(w,h,pw,ph,obst,rand,intentos){
+  const mx=LOCO_MARGEN_PCT/100*pw, my=LOCO_MARGEN_PCT/100*ph;
+  const xMax=Math.max(mx,pw-mx-w), yMax=Math.max(my,ph-my-h);
+  let mejor=null, mejorCosto=Infinity;
+  for(let i=0;i<(intentos||100);i++){
+    const x=mx+rand()*Math.max(0,xMax-mx);
+    const y=my+rand()*Math.max(0,yMax-my);
+    const c=costoSolapeLoco({x,y,w,h},obst);
+    if(c<mejorCosto){ mejorCosto=c; mejor={x,y}; if(c===0) break; }
+  }
+  return mejor;
+}
+function rectDeDivLoco(d,pw,ph){
+  return {x:parseFloat(d.style.left)/100*pw, y:parseFloat(d.style.top)/100*ph,
+          w:parseFloat(d.style.width), h:parseFloat(d.style.height)};
+}
+
+function entrarModoLoco(){
+  document.getElementById('btn-textox-entrada').style.display='none';
+  document.getElementById('btn-insertar-loco').style.display='none';
+  locoPanel=document.getElementById('modo-loco-panel');
+  document.getElementById('modo-loco-overlay').classList.add('mostrando');
+  detenerAnimacionLoco();
+  modoPanelActual=localStorage.getItem(LOCO_PANEL_KEY)||'negro';
+  locoPanel.classList.toggle('panel-amarillo',modoPanelActual==='amarillo');
+  const btnPanel=document.getElementById('btn-panel-loco');
+  if(btnPanel) btnPanel.classList.toggle('activo',modoPanelActual==='amarillo');
+  const resGuardada=localStorage.getItem(LOCO_RES_KEY)||'completo';
+  aplicarResolucionLoco(resGuardada,false);
+  cargarFrasesLoco();
+  const activaExistente=locoPanel.querySelector('.loco-frase.activa');
+  if(activaExistente){
+    locoFraseActiva=activaExistente;
+    activaExistente.contentEditable='true';
+    activaExistente.focus();
+  } else {
+    crearCajaFraseLoco();
+  }
+}
+
+function salirModoLoco(){
+  cerrarEdicionLoco();
+  setModoBorrarLoco(false);
+  if(locoFraseActiva) locoFraseActiva.blur();
+  document.getElementById('modo-loco-overlay').classList.remove('mostrando');
+  document.getElementById('btn-textox-entrada').style.display='';
+  document.getElementById('btn-insertar-loco').style.display='';
+  detenerAnimacionLoco();
+}
+
+// ── Mover las frases al azar (botón Play/Pausa) ─────────────────────────────
+let locoAnimando=false;
+let locoAnimacionInterval=null;
+
+const ICONO_PLAY='<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 2.2 L11.6 7 L4 11.8 Z"/></svg>';
+const ICONO_PAUSA='<svg viewBox="0 0 14 14" aria-hidden="true"><rect x="3.2" y="2.4" width="2.6" height="9.2"/><rect x="8.2" y="2.4" width="2.6" height="9.2"/></svg>';
+
+function toggleAnimacionLoco(btn){
+  locoAnimando=!locoAnimando;
+  if(locoAnimando){
+    btn.innerHTML=ICONO_PAUSA;
+    btn.title='Pausar';
+    // esconder el recuadro de texto mientras se mueven las frases
+    if(locoFraseActiva){ locoFraseActiva.blur(); locoFraseActiva.classList.add('oculta-play'); }
+    Array.from(locoPanel.querySelectorAll('.loco-frase:not(.activa)')).forEach(div=>{
+      div.style.transition='left 2.4s ease-in-out, top 2.4s ease-in-out';
+    });
+    moverFrasesAlAzar();
+    locoAnimacionInterval=setInterval(moverFrasesAlAzar,2600);
+  } else {
+    detenerAnimacionLoco(true);
+  }
+}
+
+function detenerAnimacionLoco(restaurarFoco){
+  locoAnimando=false;
+  if(locoAnimacionInterval){ clearInterval(locoAnimacionInterval); locoAnimacionInterval=null; }
+  const btn=document.getElementById('btn-play-loco');
+  if(btn){ btn.innerHTML=ICONO_PLAY; btn.title='Mover al azar'; }
+  if(locoPanel){
+    Array.from(locoPanel.querySelectorAll('.loco-frase')).forEach(div=>{ div.style.transition=''; });
+    // volver a mostrar el recuadro de texto
+    const activa=locoPanel.querySelector('.loco-frase.activa');
+    if(activa) activa.classList.remove('oculta-play');
+    if(restaurarFoco===true && activa){
+      activa.focus();
+      const r=document.createRange();
+      r.selectNodeContents(activa);
+      r.collapse(false);
+      const sel=window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+  }
+}
+
+function moverFrasesAlAzar(){
+  if(!locoPanel) return;
+  const {pw,ph}=dimsPanelLoco();
+  const obst=[];
+  const act=locoPanel.querySelector('.loco-frase.activa');
+  if(act) obst.push(rectDeDivLoco(act,pw,ph));
+  Array.from(locoPanel.querySelectorAll('.loco-frase:not(.activa)')).forEach(div=>{
+    const w=div.offsetWidth, h=div.offsetHeight;
+    const l=buscarLugarLibre(w,h,pw,ph,obst,Math.random,120);
+    const nx=l.x/pw*100, ny=l.y/ph*100;
+    div.style.left=nx+'%';
+    div.style.top=ny+'%';
+    // recordar la nueva organización (así se conserva al cambiar de tablero)
+    if(div._frase){ div._frase.xPct=nx; div._frase.yPct=ny; }
+    obst.push({x:l.x,y:l.y,w,h});
+  });
+  guardarFrasesLoco();
+}
+
+function nuevoModoLoco(){
+  if(!confirm('¿Borrar todas las frases de MODOLOCO?')) return;
+  detenerAnimacionLoco();
+  locoFrases=[];
+  localStorage.removeItem(LOCO_KEY);
+  locoPanel.innerHTML='';
+  crearCajaFraseLoco();
+}
+
+function guardarFrasesLoco(){
+  localStorage.setItem(LOCO_KEY, JSON.stringify(locoFrases));
+}
+
+function cargarFrasesLoco(){
+  // Sacar solo las frases FIJAS (no la que se está escribiendo, si hay una).
+  Array.from(locoPanel.children).forEach(ch=>{ if(!ch.classList.contains('activa')) ch.remove(); });
+  try{
+    locoFrases=JSON.parse(localStorage.getItem(LOCO_KEY)||'[]');
+  }catch(err){ locoFrases=[]; }
+  // Semilla fija por frase, GUARDADA (si no, cada click generaba una nueva y las
+  // frases reubicadas se movían de a poco).
+  let cambio=false;
+  locoFrases.forEach(f=>{ if(f.seed===undefined){ f.seed=Math.floor(Math.random()*2147483647); cambio=true; } });
+  if(cambio) guardarFrasesLoco();
+  const {pw,ph}=dimsPanelLoco();
+  const obst=[];
+  const act=locoPanel.querySelector('.loco-frase.activa');
+  if(act) obst.push(rectDeDivLoco(act,pw,ph));
+  locoFrases.forEach(f=>renderFraseFijaLoco(f,obst));
+}
+
+function azarConSemilla(seed){ // mulberry32
+  let a=seed>>>0;
+  return function(){
+    a=(a+0x6D2B79F5)>>>0;
+    let t=a;
+    t=Math.imul(t^(t>>>15),t|1);
+    t^=t+Math.imul(t^(t>>>7),t|61);
+    return ((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+
+function renderFraseFijaLoco(f,obst){
+  const div=document.createElement('div');
+  div.className='loco-frase';
+  div.innerHTML = f.html!==undefined ? f.html : (f.texto||'');
+  div._frase=f;
+  // Si el panel cambió de tamaño y la posición original ya no entra bien, en vez
+  // de amontonarla contra el borde le buscamos un lugar nuevo al azar dentro del
+  // panel actual — así se aprovecha todo el ancho/alto disponible.
+  const {pw,ph}=dimsPanelLoco();
+  const margenXPct=LOCO_MARGEN_PCT;
+  const margenYPct=LOCO_MARGEN_PCT;
+  const anchoPct=(f.anchoPx/pw)*100;
+  const altoPct=(f.altoPx/ph)*100;
+  const xMax=Math.max(margenXPct,100-margenXPct-anchoPct);
+  const yMax=Math.max(margenYPct,100-margenYPct-altoPct);
+  // Azar FIJO por frase (semilla propia): reubicar da siempre el mismo lugar,
+  // así apretar de nuevo el mismo tablero no mueve las palabras.
+  if(f.seed===undefined) f.seed=Math.floor(Math.random()*2147483647);
+  const rng=azarConSemilla(f.seed);
+  const rx=rng(), ry=rng();
+  let xPct=f.xPct, yPct=f.yPct;
+  if(xPct<margenXPct || xPct>xMax) xPct=margenXPct+rx*Math.max(0,(xMax-margenXPct));
+  if(yPct<margenYPct || yPct>yMax) yPct=margenYPct+ry*Math.max(0,(yMax-margenYPct));
+  // Si pisa a otra frase ya ubicada, buscarle un lugar libre (con el mismo azar
+  // fijo de la frase, así el resultado es siempre el mismo).
+  if(obst){
+    const w=f.anchoPx, h=f.altoPx;
+    if(costoSolapeLoco({x:xPct/100*pw,y:yPct/100*ph,w,h},obst)>0){
+      const l=buscarLugarLibre(w,h,pw,ph,obst,rng,80);
+      xPct=l.x/pw*100; yPct=l.y/ph*100;
+    }
+    obst.push({x:xPct/100*pw,y:yPct/100*ph,w,h});
+  }
+  div.style.left=xPct+'%';
+  div.style.top=yPct+'%';
+  div.style.fontSize=f.size;
+  div.style.color=f.color;
+  if(f.tipo!==undefined) aplicarTipoAFraseLoco(div,f.tipo);
+  div.style.width=f.anchoPx+'px';
+  div.style.height=f.altoPx+'px';
+  if(f.fondo){ div.style.background=f.fondo; div.classList.add('con-fondo'); }
+  if(f.italic) div.style.fontStyle='italic';
+  if(f.bold) div.style.fontWeight='bold';
+  if(f.align) div.style.textAlign=f.align;
+  if(f.unaLinea) div.style.whiteSpace='nowrap';
+  locoPanel.appendChild(div);
+}
+
+const LOCO_COLORES_FONDO=['#ffffff','#1a8fff','#aaee00','#ff6600','#ff00fe','#777777'];
+
+// ── Panel: negro (default) / amarillo. Sobre fondo negro nunca se ofrece el negro
+// como color de letra (no se vería). El negro escrito en panel amarillo pasa a
+// "casi blanco" al cambiar a negro (para distinguirlo del blanco genuino), y
+// vuelve a negro si se vuelve al panel amarillo. El resto de los colores no cambian.
+const LOCO_PANEL_KEY='modolocoPanel';
+const LOCO_CASI_BLANCO='#e5e5e5';
+let modoPanelActual='negro';
+function coloresLocoActuales(){
+  if(modoPanelActual==='negro'){
+    return ['#ffffff','#1a8fff','#aaee00','#ff6600','#ff00fe','#777777'];
+  }
+  return ['#111111','#ffffff','#1a8fff','#aaee00','#ff6600','#ff00fe','#777777'];
+}
+function togglePanelLoco(btn){
+  const yendoANegro = modoPanelActual==='amarillo';
+  modoPanelActual = modoPanelActual==='negro' ? 'amarillo' : 'negro';
+  localStorage.setItem(LOCO_PANEL_KEY,modoPanelActual);
+  locoPanel.classList.toggle('panel-amarillo',modoPanelActual==='amarillo');
+  btn.classList.toggle('activo',modoPanelActual==='amarillo');
+  const invertir = c => {
+    if(yendoANegro && c==='#111111') return LOCO_CASI_BLANCO;
+    if(!yendoANegro && c===LOCO_CASI_BLANCO) return '#111111';
+    return c;
+  };
+  locoFrases.forEach(f=>{ f.color=invertir(f.color); });
+  guardarFrasesLoco();
+  Array.from(locoPanel.querySelectorAll('.loco-frase')).forEach(div=>{
+    if(div.style.color) div.style.color=invertir(div.style.color);
+  });
+}
+
+// ── Tipografía del panel (igual que en TEXTOX) ──────────────────────────────
+let tipoIdxLoco=0;
+// MODOLOCO: las 4 de TEXTOX + 6 locas (solo para MODOLOCO)
+const tiposLoco=tipos.concat([
+  "'Creepster', Chiller, Papyrus, fantasy",
+  "'Pacifico', 'Brush Script MT', 'Segoe Script', cursive",
+  "'VT323', 'Lucida Console', monospace",
+  "'Bungee', Impact, 'Arial Black', sans-serif",
+  "'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive",
+  "'UnifrakturCook', 'Old English Text MT', serif",
+  "'Monoton', Impact, 'Arial Black', sans-serif",
+  "'Special Elite', 'Courier New', Courier, monospace"
+]);
+const tiposLocoNombre=tiposNombre.concat(['Creepster','Pacifico','VT323','Bungee','Permanent Marker','UnifrakturCook','Monoton','Special Elite']);
+// Última posición del ciclo de abc 0: "azar". Cada frase lleva su propia tipografía
+// (guardada en f.tipo), distinta y elegida al azar entre las 12 disponibles.
+const TIPO_AZAR_IDX=tiposLoco.length;
+function tipoAzarActivoLoco(){ return tipoIdxLoco===TIPO_AZAR_IDX; }
+function tipoAlAzarLoco(){ return Math.floor(Math.random()*tiposLoco.length); }
+function aplicarTipoAFraseLoco(div,idx){
+  if(idx===undefined || idx===null){ div.style.fontFamily=''; div.style.lineHeight=''; return; }
+  div.style.fontFamily=tiposLoco[idx];
+  div.style.lineHeight = idx>=tipos.length ? '1.25' : '';
+}
+function rotarTipoLoco(){
+  tipoIdxLoco=(tipoIdxLoco+1)%(tiposLoco.length+1);
+  const azar=tipoAzarActivoLoco();
+  if(azar){
+    locoPanel.style.fontFamily=tiposLoco[0];
+    locoPanel.style.lineHeight='';
+    // nueva tirada para todas las frases fijas...
+    locoFrases.forEach(f=>{ f.tipo=tipoAlAzarLoco(); });
+    Array.from(locoPanel.querySelectorAll('.loco-frase')).forEach(div=>{
+      if(div._frase){ aplicarTipoAFraseLoco(div,div._frase.tipo); }
+      else { div._tipo=tipoAlAzarLoco(); aplicarTipoAFraseLoco(div,div._tipo); } // ...y la que se está escribiendo
+    });
+  } else {
+    locoPanel.style.fontFamily=tiposLoco[tipoIdxLoco];
+    // las tipografías locas pueden ser más altas: línea algo más holgada para que
+    // la caja de una línea no las corte.
+    locoPanel.style.lineHeight = tipoIdxLoco>=tipos.length ? '1.25' : '';
+    // salir del azar: todas las frases vuelven a seguir la tipografía del panel
+    locoFrases.forEach(f=>{ delete f.tipo; });
+    Array.from(locoPanel.querySelectorAll('.loco-frase')).forEach(div=>{
+      div._tipo=undefined;
+      aplicarTipoAFraseLoco(div,undefined);
+    });
+  }
+  ajustarAnchosFrasesLoco();
+  guardarFrasesLoco();
+  // las tipografías web se bajan la primera vez que se usan: al terminar, medir de nuevo
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(()=>{ ajustarAnchosFrasesLoco(); guardarFrasesLoco(); });
+  }
+  mostrarEtiquetaTipoLoco(2); // avisa a qué tipografía pasó (2 segundos)
+}
+
+// Cartelito debajo de abc 0: nombre de la tipografía actual ("Al Azar" en el modo azar).
+// Con el mouse encima se ve mientras está encima; al apretar el botón se ve 2 segundos.
+let etiquetaTipoTimer=null;
+function nombreTipoLoco(){ return tipoAzarActivoLoco() ? 'Al Azar' : tiposLocoNombre[tipoIdxLoco]; }
+function mostrarEtiquetaTipoLoco(segundos){
+  const et=document.getElementById('etiqueta-tipo-loco');
+  const b=document.getElementById('btn-tipo-loco');
+  if(!et||!b) return;
+  clearTimeout(etiquetaTipoTimer); etiquetaTipoTimer=null;
+  et.textContent=nombreTipoLoco();
+  et.style.display='block';
+  const r=b.getBoundingClientRect();
+  // a la izquierda del botón, centrada en vertical con él
+  et.style.top=(r.top+r.height/2-et.offsetHeight/2)+'px';
+  et.style.left='auto';
+  et.style.right=(document.documentElement.clientWidth-r.left+6)+'px';
+  et.style.textAlign='right';
+  if(segundos) etiquetaTipoTimer=setTimeout(ocultarEtiquetaTipoLoco,segundos*1000);
+}
+function ocultarEtiquetaTipoLoco(){
+  clearTimeout(etiquetaTipoTimer); etiquetaTipoTimer=null;
+  const et=document.getElementById('etiqueta-tipo-loco');
+  if(et) et.style.display='none';
+}
+
+// Negrita / Cursiva / Subrayado: "pegajosos". Una vez activados siguen aplicándose a todo
+// lo que escribas hasta que los desactives con el mismo botón, y son combinables entre sí.
+// (El Fondo de MODOLOCO no va acá: es de la frase entera, ver ciclarFondoLoco.)
+let modoNegritaGlobal=false, modoCursivaGlobal=false, modoSubrayadoGlobal=false;
+let fondoColorActual=null;
+
+function formatoActivoAhora(){
+  return modoNegritaGlobal || modoCursivaGlobal || modoSubrayadoGlobal;
+}
+function aplicarEstiloFormato(span){
+  span.className='formato-span';
+  if(modoNegritaGlobal) span.style.fontWeight='bold';
+  if(modoCursivaGlobal) span.style.fontStyle='italic';
+  if(modoSubrayadoGlobal) span.style.textDecoration='underline';
+}
+function tieneFondoSpan(span){
+  const bg=span.style.backgroundColor;
+  return !!bg && bg!=='transparent';
+}
+function coincideFormatoActual(span){
+  if(!span) return !formatoActivoAhora();
+  return (span.style.fontWeight==='bold')===modoNegritaGlobal
+    && (span.style.fontStyle==='italic')===modoCursivaGlobal
+    && (span.style.textDecoration==='underline')===modoSubrayadoGlobal;
+}
+
+function insertarMarcadorFormato(activa){
+  const sel=window.getSelection();
+  // Si el cursor ya está dentro de un marcador vacío (por cambiar el fondo varias veces
+  // seguidas), se lo reemplaza en vez de apilar otro.
+  if(sel.rangeCount){
+    const nd=sel.anchorNode;
+    const el0=nd && (nd.nodeType===Node.TEXT_NODE ? nd.parentElement : nd);
+    const viejo=el0 && el0.closest ? el0.closest('.marcador') : null;
+    if(viejo && activa.contains(viejo) && viejo.textContent.replace(/\u200B/g,'')===''){
+      const r0=document.createRange();
+      r0.setStartBefore(viejo);
+      r0.collapse(true);
+      viejo.remove();
+      sel.removeAllRanges();
+      sel.addRange(r0);
+    }
+  }
+  if(!sel.rangeCount || !activa.contains(sel.getRangeAt(0).commonAncestorContainer)){
+    const r0=document.createRange();
+    r0.selectNodeContents(activa);
+    r0.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(r0);
+  }
+  const range=sel.getRangeAt(0);
+  range.collapse(false);
+  const marcador=document.createElement('span');
+  if(formatoActivoAhora()){ aplicarEstiloFormato(marcador); marcador.classList.add('marcador'); }
+  const zw=document.createTextNode('\u200B');
+  marcador.appendChild(zw);
+  range.insertNode(marcador);
+  const r2=document.createRange();
+  r2.setStart(zw,zw.length);
+  r2.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(r2);
+}
+
+// Color de la frase que se está escribiendo (mismos colores que TEXTOX)
+// Un solo botón de color: cada click pasa al siguiente color de la paleta y a la izquierda
+// aparece un momento el circulito del color elegido.
+function colorHexDe(css){
+  const m=css && css.match(/\d+/g);
+  if(m && m.length>=3) return '#'+m.slice(0,3).map(n=>(+n).toString(16).padStart(2,'0')).join('');
+  return (css||'').toLowerCase();
+}
+function ciclarColorLoco(btn){
+  const pal=coloresLocoActuales();
+  const div=locoFraseActiva;
+  const actual=div ? colorHexDe(div.style.color) : '';
+  // Si la frase tiene fondo, la letra se ve negra y el botón muestra el color que quedó "guardado":
+  // el primer click saca el fondo y deja ESE color (sin pasar al siguiente).
+  const conFondo=!!(div && (div._fondo || div.classList.contains('con-fondo')));
+  const i=pal.indexOf(actual);
+  const c=(conFondo && actual) ? actual : pal[(i+1)%pal.length];
+  colorLoco(c,btn);
+  mostrarIndicadorFondo(btn,c,2);
+}
+function colorLocoAtajo(i){
+  const btn=document.getElementById('btn-color-loco');
+  const c=COLORES_TEXTO[i];
+  colorLoco(c,btn);
+  mostrarIndicadorFondo(btn,c,2);
+}
+// Un solo botón de tamaño del tablero: 1 → 2 → 3 → 4 → 1
+function ciclarResolucionLoco(){
+  const modos=['completo','normal','compacto','panoramico'];
+  const i=modos.indexOf(localStorage.getItem(LOCO_RES_KEY)||'normal');
+  cambiarResolucionLoco(modos[(i+1)%modos.length]);
+}
+// Tamaño de la frase entera (1 2 3 4)
+function pintarBotonColorLoco(){
+  const b=document.getElementById('btn-color-loco');
+  if(b && locoFraseActiva && locoFraseActiva.style.color) b.style.background=locoFraseActiva.style.color;
+}
+function pintarBotonTamañoLoco(){
+  const b=document.getElementById('btn-tamano-loco');
+  if(!b) return;
+  const size=locoFraseActiva ? locoFraseActiva.style.fontSize : locoTamañoElegido;
+  const i=LOCO_TAMAÑOS_BOTON.indexOf(size);
+  b.textContent=i>=0 ? String(i+1) : '–';
+}
+function aplicarTamañoFraseLoco(div,size){
+  const st=div._st;
+  div.style.fontSize=size;
+  if(st) st.size=size;
+  const {ph}=dimsPanelLoco();
+  let altoPx;
+  if(!st || st.unaLinea!==false) altoPx=Math.round(parseFloat(size)*16*1.5);
+  else { div.style.height='auto'; altoPx=Math.min(Math.ceil(div.scrollHeight)+6,Math.floor(ph*0.9)); }
+  div.style.height=altoPx+'px';
+  if(st) st.altoPx=altoPx;
+  if(st && st.unaLinea) st.xPct=ajustarAnchoUnaCajaLoco(div).xPct;
+  ajustarActivaLoco(); // que no se salga del tablero
+}
+function cambiarTamañoLoco(){
+  const div=locoFraseActiva;
+  const base=div ? div.style.fontSize : locoTamañoElegido;
+  const i=LOCO_TAMAÑOS_BOTON.indexOf(base);
+  const nuevo=LOCO_TAMAÑOS_BOTON[(i+1)%LOCO_TAMAÑOS_BOTON.length];
+  locoTamañoElegido=nuevo;
+  localStorage.setItem(LOCO_TAMAÑO_KEY,nuevo);
+  if(div){ aplicarTamañoFraseLoco(div,nuevo); div.focus(); }
+  pintarBotonTamañoLoco();
+}
+
+function colorLoco(c,btn){
+  blinkColor(btn);
+  if(!locoFraseActiva) return;
+  // Al cambiar el color de la letra se saca el fondo (si no, la letra queda negra y el color no se ve).
+  if(locoFraseActiva._fondo || fondoColorActual || fondoIdxLoco>=0){
+    fondoIdxLoco=-1;
+    fondoColorActual=null;
+    aplicarFondoFraseLoco(locoFraseActiva,null);
+    const bf=document.getElementById('btn-fondo-loco');
+    if(bf) pintarBotonFondo(bf,null);
+    ocultarIndicadorFondo();
+  }
+  locoFraseActiva.style.color=c;
+  if(locoFraseActiva._setColor) locoFraseActiva._setColor(c);
+  pintarBotonColorLoco();
+}
+
+// Ocultar botones de MODOLOCO (quedan visibles MODOLOCO, play y este botón)
+let botonesLocoOcultos=false;
+function toggleBotonesLoco(){
+  botonesLocoOcultos=!botonesLocoOcultos;
+  const v=botonesLocoOcultos?'hidden':'visible';
+  const barra=document.getElementById('barra-loco-izq');
+  Array.from(barra.children).forEach(el=>{
+    if(el.id!=='btn-hide-loco') el.style.visibility=v;
+  });
+  document.getElementById('sidebar-loco').style.visibility=v;
+  document.getElementById('btn-hide-loco').style.opacity=botonesLocoOcultos?'0.4':'0.6';
+}
+
+// ── Cesto: modo borrar frases ──────────────────────────────────────────────
+// Con el modo activo, la frase bajo el mouse se marca como bloque rojo (CSS) y
+// un click la borra. El cesto queda pulsando en rojo hasta que se vuelve a apretar.
+let locoModoBorrar=false;
+function setModoBorrarLoco(on){
+  locoModoBorrar=!!on;
+  const p=document.getElementById('modo-loco-panel');
+  if(p) p.classList.toggle('modo-borrar',locoModoBorrar);
+  const b=document.getElementById('btn-borrar-loco');
+  if(b) b.classList.toggle('activo',locoModoBorrar);
+  const sb=document.getElementById('sidebar-loco');
+  if(sb) sb.classList.toggle('borrando',locoModoBorrar);
+}
+function toggleBorrarLoco(){ setModoBorrarLoco(!locoModoBorrar); }
+document.getElementById('modo-loco-panel').addEventListener('mousedown',(ev)=>{
+  if(!locoModoBorrar) return;
+  const div=ev.target.closest('.loco-frase');
+  if(!div || div.classList.contains('activa')) return; // la caja que se está escribiendo no se toca
+  ev.preventDefault(); // el foco se queda en la caja de escritura
+  const idx=locoFrases.indexOf(div._frase);
+  if(idx>=0) locoFrases.splice(idx,1);
+  div.remove();
+  guardarFrasesLoco();
+});
+
+// ── Recuadro rosa de selección ────────────────────────────────────────────────
+// El navegador pinta la selección con el color del sistema y no permite ponerle
+// borde. Se lo saca (CSS ::selection transparente) y se dibuja un recuadro rosa por
+// cada línea de texto seleccionada, en TEXTOX y en las frases de MODOLOCO.
+const cajaSeleccion=document.createElement('div');
+cajaSeleccion.id='caja-seleccion';
+document.body.appendChild(cajaSeleccion);
+let cajaSelPendiente=false;
+function programarCajaSeleccion(){
+  if(cajaSelPendiente) return;
+  cajaSelPendiente=true;
+  requestAnimationFrame(()=>{ cajaSelPendiente=false; actualizarCajaSeleccion(); });
+}
+function actualizarCajaSeleccion(){
+  cajaSeleccion.textContent='';
+  const sel=window.getSelection();
+  if(!sel || !sel.rangeCount || sel.isCollapsed) return;
+  const range=sel.getRangeAt(0);
+  const ancla=range.commonAncestorContainer;
+  const el=ancla.nodeType===Node.ELEMENT_NODE ? ancla : ancla.parentElement;
+  const cont=el && el.closest ? el.closest('#e, .loco-frase') : null;
+  if(!cont) return;
+  const locoAbierto=document.getElementById('modo-loco-overlay').classList.contains('mostrando');
+  if(cont.id==='e' && locoAbierto) return;
+  // rectángulos de cada tramo de texto seleccionado
+  const nodos=[];
+  if(ancla.nodeType===Node.TEXT_NODE) nodos.push(ancla);
+  else {
+    const tw=document.createTreeWalker(ancla,NodeFilter.SHOW_TEXT);
+    while(tw.nextNode()) nodos.push(tw.currentNode);
+  }
+  const rects=[];
+  nodos.forEach(n=>{
+    if(!range.intersectsNode(n)) return;
+    const a=(n===range.startContainer)?range.startOffset:0;
+    const b=(n===range.endContainer)?range.endOffset:n.length;
+    if(b<=a) return;
+    if(n.data.slice(a,b).replace(/\u200B/g,'')==='') return;
+    const r=document.createRange();
+    r.setStart(n,a); r.setEnd(n,b);
+    Array.from(r.getClientRects()).forEach(q=>{ if(q.width>0.5 && q.height>0.5) rects.push(q); });
+  });
+  // un solo recuadro por línea
+  rects.sort((p,q)=>p.top-q.top || p.left-q.left);
+  const lineas=[];
+  rects.forEach(q=>{
+    const cy=(q.top+q.bottom)/2;
+    const L=lineas.find(l=>cy>l.top && cy<l.bottom);
+    if(L){
+      L.left=Math.min(L.left,q.left); L.right=Math.max(L.right,q.right);
+      L.top=Math.min(L.top,q.top); L.bottom=Math.max(L.bottom,q.bottom);
+    } else lineas.push({left:q.left,right:q.right,top:q.top,bottom:q.bottom});
+  });
+  lineas.forEach(l=>{
+    const d=document.createElement('div');
+    d.style.left=(l.left-1)+'px';
+    d.style.top=(l.top-1)+'px';
+    d.style.width=(l.right-l.left+2)+'px';
+    d.style.height=(l.bottom-l.top+2)+'px';
+    cajaSeleccion.appendChild(d);
+  });
+}
+document.addEventListener('selectionchange',programarCajaSeleccion);
+normalizarFondosTextox(); // texto ya guardado con fondo: letra negra
+limpiarMarcadoresTextox(); // caracteres invisibles que hayan quedado guardados
+window.addEventListener('scroll',programarCajaSeleccion,true);
+window.addEventListener('resize',programarCajaSeleccion);
+
+// ── Botón Fondo (TEXTOX y MODOLOCO) ──────────────────────────────────────────
+// Cada click pasa al siguiente color de la lista y, después del último, a "sin fondo"
+// (X). El color queda fijo hasta el próximo click: no cambia al cambiar de frase.
+// Aplica a la selección, o a lo que se escriba desde ese momento. Un círculo con el
+// color (o una X) aparece 2 segundos a la izquierda del botón.
+let indicadorFondoTimer=null;
+function ocultarIndicadorFondo(){
+  clearTimeout(indicadorFondoTimer); indicadorFondoTimer=null;
+  const ind=document.getElementById('indicador-fondo');
+  if(ind) ind.style.display='none';
+}
+function mostrarIndicadorFondo(btn,color,segundos){
+  const ind=document.getElementById('indicador-fondo');
+  if(!ind||!btn) return;
+  clearTimeout(indicadorFondoTimer); indicadorFondoTimer=null;
+  if(color){
+    ind.className='con-color';
+    ind.style.background=color;
+    ind.innerHTML='';
+  } else {
+    ind.className='';
+    ind.style.background='transparent';
+    ind.innerHTML='<svg viewBox="0 0 19 19" width="19" height="19" aria-hidden="true">'
+      +'<path d="M4 4L15 15M15 4L4 15" stroke="#000" stroke-width="4" stroke-linecap="round"/>'
+      +'<path d="M4 4L15 15M15 4L4 15" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+  }
+  const r=btn.getBoundingClientRect();
+  ind.style.top=(r.top+r.height/2-9.5)+'px';
+  ind.style.right=(document.documentElement.clientWidth-r.left+6)+'px';
+  ind.style.display='block';
+  if(segundos) indicadorFondoTimer=setTimeout(ocultarIndicadorFondo,segundos*1000);
+}
+// El botón F se pinta del color elegido (o queda como los demás si no hay fondo).
+function pintarBotonFondo(btn,c){
+  if(!c){ btn.style.background='#111'; btn.style.color=''; return; }
+  const n=parseInt(c.slice(1),16), r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  btn.style.background=c;
+  btn.style.color='#111'; // sobre un fondo de color la letra va siempre negra
+}
+// Aplica (o saca, con c=null) el fondo a la selección del elemento editable, o a lo
+// que se escriba a partir del cursor si no hay nada seleccionado.
+function aplicarFondoEditable(c){
+  document.execCommand('styleWithCSS',false,true);
+  document.execCommand('hiliteColor',false,c?c:'transparent');
+  document.execCommand('styleWithCSS',false,false);
+}
+
+// TEXTOX: cada tramo con fondo lleva la clase fondo-txt (letra negra por CSS). Sacar el
+// fondo saca la clase y la letra recupera su color original.
+function normalizarFondosTextox(){
+  e.querySelectorAll('*').forEach(sp=>{
+    if(sp.tagName==='BR') return;
+    const bg=sp.style ? sp.style.backgroundColor : '';
+    if(bg==='transparent' || bg==='rgba(0, 0, 0, 0)'){
+      sp.style.backgroundColor='';
+      sp.classList.remove('fondo-txt');
+    } else if(bg){
+      sp.classList.add('fondo-txt');
+    } else {
+      sp.classList.remove('fondo-txt');
+    }
+    if(sp.hasAttribute('style') && !sp.getAttribute('style')) sp.removeAttribute('style');
+    if(sp.hasAttribute('class') && !sp.getAttribute('class')) sp.removeAttribute('class');
+  });
+}
+// Marcadores invisibles (caracter de ancho cero) que se usan al cambiar color/fondo con el cursor
+// sin selección. Cuando ya se escribió algo al lado, o el cursor se fue a otro lado, se sacan.
+function limpiarMarcadoresTextox(){
+  const sel=window.getSelection();
+  const ancla=(sel.rangeCount && e.contains(sel.anchorNode)) ? sel.anchorNode : null;
+  const w=document.createTreeWalker(e,NodeFilter.SHOW_TEXT);
+  const nodos=[]; let t;
+  while((t=w.nextNode())) if(t.data.indexOf('\u200B')>=0) nodos.push(t);
+  nodos.forEach(n=>{
+    if(/^\u200B*$/.test(n.data)){ if(n!==ancla) n.remove(); return; }
+    let i;
+    while((i=n.data.indexOf('\u200B'))>=0) n.deleteData(i,1);
+  });
+  e.querySelectorAll('font,span').forEach(el=>{
+    if(!el.isConnected) return;
+    if(ancla && el.contains(ancla)) return;
+    if(!el.textContent && !el.querySelector('br,img')) el.remove();
+  });
+}
+// Copiar / cortar: el portapapeles no lleva los caracteres invisibles.
+function copiarSinMarcadoresTextox(ev){
+  const sel=window.getSelection();
+  if(!sel.rangeCount || sel.isCollapsed || !ev.clipboardData) return;
+  const div=document.createElement('div');
+  div.appendChild(sel.getRangeAt(0).cloneContents());
+  if(div.innerHTML.indexOf('\u200B')<0) return;
+  div.querySelectorAll('font,span').forEach(n=>{
+    if(!n.textContent.replace(/\u200B/g,'') && !n.querySelector('br,img')) n.remove();
+  });
+  ev.clipboardData.setData('text/html',div.innerHTML.replace(/\u200B/g,''));
+  ev.clipboardData.setData('text/plain',sel.toString().replace(/\u200B/g,''));
+  ev.preventDefault();
+  if(ev.type==='cut') document.execCommand('delete');
+}
+e.addEventListener('copy',copiarSinMarcadoresTextox);
+e.addEventListener('cut',copiarSinMarcadoresTextox);
+// Para el .HTML guardado (sin la hoja de estilos de la página): la letra negra queda escrita en cada tramo.
+function htmlExportTextox(){
+  const c=e.cloneNode(true);
+  c.querySelectorAll('.fondo-txt, .fondo-txt *').forEach(n=>{ n.style.color='#111111'; });
+  // Sin los marcadores invisibles (ni las etiquetas que quedaron vacías por ellos)
+  c.querySelectorAll('font,span').forEach(n=>{
+    if(!n.textContent.replace(/\u200B/g,'') && !n.querySelector('br,img')) n.remove();
+  });
+  return c.innerHTML.replace(/\u200B/g,'');
+}
+
+// TEXTOX
+let fondoIdxTx=-1; // -1 = sin fondo
+// Cambiar el color de la letra saca el fondo de la selección (o del texto que se escriba
+// desde el cursor) y deja el botón F en "sin fondo", para que el color nuevo se vea enseguida.
+// No usa execCommand para el fondo (falla con selecciones mixtas o fondos anidados): corta
+// los tramos con fondo justo en los bordes de la selección y saca el fondo solo de lo elegido.
+function fondoAncestroTextox(n){
+  let p=n.parentNode;
+  while(p && p!==e){
+    if(p.nodeType===1 && p.style){
+      const bg=p.style.backgroundColor;
+      if(bg && bg!=='transparent' && bg!=='rgba(0, 0, 0, 0)') return p;
+    }
+    p=p.parentNode;
+  }
+  return null;
+}
+function vacioTextox(el){ return !el.textContent && !el.querySelector('br,img'); }
+// Saca el nodo n del elemento con fondo A: A queda partido en "antes" y "después" (con fondo)
+// y n queda en medio, sin fondo. Lo que haya entre A y n (negrita, font...) se conserva.
+function sacarDeFondoTextox(n,A){
+  const rb=document.createRange(); rb.setStart(A,0); rb.setEndBefore(n);
+  const antes=A.cloneNode(false); antes.appendChild(rb.extractContents());
+  const ra=document.createRange(); ra.setStartAfter(n); ra.setEnd(A,A.childNodes.length);
+  const despues=A.cloneNode(false); despues.appendChild(ra.extractContents());
+  if(!vacioTextox(antes)) A.before(antes);
+  if(!vacioTextox(despues)) A.after(despues);
+  while(A.firstChild) A.before(A.firstChild);
+  A.remove();
+}
+function quitarFondoSeleccionTextox(){
+  const sel=window.getSelection();
+  if(!sel.rangeCount || !e.contains(sel.anchorNode)) return false;
+  const r=sel.getRangeAt(0);
+  let quitado=false;
+  if(r.collapsed) return false;
+  // Partir los textos de los bordes para que la selección tome nodos enteros
+  let sc=r.startContainer, so=r.startOffset, ec=r.endContainer, eo=r.endOffset;
+  // Se calcula antes de partir los textos (después el largo del nodo ya no sirve para esto)
+  const iniciaAlFinal=sc.nodeType===Node.TEXT_NODE && so>0 && so>=sc.length;
+  if(ec.nodeType===Node.TEXT_NODE && eo>0 && eo<ec.length) ec.splitText(eo);
+  if(sc.nodeType===Node.TEXT_NODE && so>0 && so<sc.length){
+    const nuevo=sc.splitText(so);
+    if(ec===sc) ec=nuevo;
+    sc=nuevo;
+  }
+  const rr=document.createRange();
+  if(sc.nodeType!==Node.TEXT_NODE) rr.setStart(sc,so);
+  else if(iniciaAlFinal) rr.setStartAfter(sc);
+  else rr.setStart(sc,0);
+  if(ec.nodeType!==Node.TEXT_NODE) rr.setEnd(ec,eo);
+  else if(eo===0) rr.setEndBefore(ec);
+  else rr.setEnd(ec,ec.length);
+  const raiz=rr.commonAncestorContainer;
+  const nodos=[];
+  if(raiz.nodeType===Node.TEXT_NODE) nodos.push(raiz);
+  else {
+    const w=document.createTreeWalker(raiz,NodeFilter.SHOW_TEXT);
+    let t;
+    while((t=w.nextNode())){
+      const nr=document.createRange(); nr.selectNodeContents(t);
+      if(rr.compareBoundaryPoints(Range.START_TO_START,nr)<=0 && rr.compareBoundaryPoints(Range.END_TO_END,nr)>=0 && t.length) nodos.push(t);
+    }
+  }
+  nodos.forEach(t=>{
+    let A;
+    while((A=fondoAncestroTextox(t))){ sacarDeFondoTextox(t,A); quitado=true; }
+  });
+  if(nodos.length){
+    const rf=document.createRange();
+    rf.setStart(nodos[0],0);
+    const ult=nodos[nodos.length-1];
+    rf.setEnd(ult,ult.length);
+    sel.removeAllRanges(); sel.addRange(rf);
+  }
+  return quitado;
+}
+// Cursor sin selección: se abre un marcador <font color> con un caracter invisible (sacándolo de
+// cualquier tramo con fondo) y el cursor queda adentro, así lo que se escriba sale de ese color.
+function colorCursorTextox(c){
+  const sel=window.getSelection();
+  if(!sel.rangeCount || !sel.isCollapsed || !e.contains(sel.anchorNode)) return false;
+  const r=sel.getRangeAt(0);
+  const nd=r.startContainer;
+  // Ya estamos dentro de un marcador vacío de color: solo se le cambia el color
+  if(nd.nodeType===Node.TEXT_NODE && /^\u200B+$/.test(nd.data) && nd.parentNode.tagName==='FONT' && !fondoAncestroTextox(nd)){
+    nd.parentNode.setAttribute('color',c);
+    return 'hay';
+  }
+  let zw;
+  if(nd.nodeType===Node.TEXT_NODE && /^\u200B+$/.test(nd.data)) zw=nd;
+  else { zw=document.createTextNode('\u200B'); r.insertNode(zw); }
+  const habia=!!fondoAncestroTextox(zw);
+  let A;
+  while((A=fondoAncestroTextox(zw))) sacarDeFondoTextox(zw,A);
+  const f=document.createElement('font');
+  f.setAttribute('color',c);
+  zw.before(f);
+  f.appendChild(zw);
+  const r2=document.createRange();
+  r2.setStart(zw,zw.length); r2.collapse(true);
+  sel.removeAllRanges(); sel.addRange(r2);
+  return habia ? 'fondo' : 'hay';
+}
+// Botón F con el cursor sin selección: marcador invisible fuera de cualquier fondo previo y,
+// si hay color, envuelto en un fondo nuevo (así los fondos no se apilan).
+function fondoCursorTextox(c){
+  const sel=window.getSelection();
+  const r=sel.getRangeAt(0);
+  const nd=r.startContainer;
+  let zw;
+  if(nd.nodeType===Node.TEXT_NODE && /^\u200B+$/.test(nd.data)) zw=nd;
+  else { zw=document.createTextNode('\u200B'); r.insertNode(zw); }
+  let A;
+  while((A=fondoAncestroTextox(zw))) sacarDeFondoTextox(zw,A);
+  if(c){
+    const sp=document.createElement('span');
+    sp.style.backgroundColor=c;
+    zw.before(sp);
+    sp.appendChild(zw);
+  }
+  const r2=document.createRange();
+  r2.setStart(zw,zw.length); r2.collapse(true);
+  sel.removeAllRanges(); sel.addRange(r2);
+}
+function colorTextox(c,btn){
+  if(document.activeElement!==e) e.focus();
+  let sacado=false;
+  const sel=window.getSelection();
+  if(sel.rangeCount && sel.isCollapsed){
+    sacado=colorCursorTextox(c)==='fondo';
+  } else {
+    sacado=quitarFondoSeleccionTextox();
+    document.execCommand('foreColor',false,c);
+  }
+  if(sacado || fondoIdxTx>=0){
+    fondoIdxTx=-1;
+    const bf=document.getElementById('btn-fondo');
+    if(bf) pintarBotonFondo(bf,null);
+    ocultarIndicadorFondo();
+  }
+  normalizarFondosTextox();
+  blinkColor(btn);
+  localStorage.setItem('txt',e.innerHTML);
+  scheduleSnap();
+}
+// TEXTOX (fondo)
+function colorFondoTextox(){ return fondoIdxTx>=0 ? LOCO_COLORES_FONDO[fondoIdxTx] : null; }
+function hoverFondoTextox(btn){ mostrarIndicadorFondo(btn,colorFondoTextox(),0); }
+// Estado de fondo de lo seleccionado (o del cursor): { mixta, color }.
+// mixta = hay fondos distintos (con y sin fondo, o colores distintos); color = el fondo
+// común (texto CSS) o null si no tiene ninguno.
+function estadoFondoTextox(){
+  const sel=window.getSelection();
+  const vacio={mixta:false,color:null};
+  if(!sel.rangeCount || !e.contains(sel.anchorNode)) return vacio;
+  const r=sel.getRangeAt(0);
+  if(sel.isCollapsed){
+    const A=fondoAncestroTextox(r.startContainer);
+    return {mixta:false,color:A ? A.style.backgroundColor : null};
+  }
+  const raiz=r.commonAncestorContainer;
+  const estados=new Set();
+  const ver=t=>{
+    const ini=(t===r.startContainer)?r.startOffset:0;
+    const fin=(t===r.endContainer)?r.endOffset:t.length;
+    if(fin<=ini || !t.data.slice(ini,fin).replace(/\u200B/g,'').trim()) return;
+    const A=fondoAncestroTextox(t);
+    estados.add(A ? A.style.backgroundColor : 'ninguno');
+  };
+  if(raiz.nodeType===Node.TEXT_NODE) ver(raiz);
+  else {
+    const w=document.createTreeWalker(raiz,NodeFilter.SHOW_TEXT);
+    let t;
+    while((t=w.nextNode())){ if(r.intersectsNode(t)) ver(t); }
+  }
+  if(estados.size>1) return {mixta:true,color:null};
+  const unico=Array.from(estados)[0];
+  return {mixta:false,color:(unico && unico!=='ninguno') ? unico : null};
+}
+// Posición de un fondo (texto CSS rgb/rgba) dentro de la lista de colores; -1 si no está.
+function indiceFondoTextox(css){
+  const m=css && css.match(/\d+/g);
+  if(!m || m.length<3) return -1;
+  return LOCO_COLORES_FONDO.findIndex(h=>{
+    const n=parseInt(h.slice(1),16);
+    return ((n>>16)&255)===+m[0] && ((n>>8)&255)===+m[1] && (n&255)===+m[2];
+  });
+}
+function ciclarFondoTextox(btn){
+  if(document.activeElement!==e) e.focus();
+  // El click pasa al color que sigue al que ya tiene lo seleccionado (o el cursor).
+  // Sin fondo -> primer color. Selección con fondos distintos: se deja toda sin fondo
+  // (se empieza de cero) y los clicks siguientes recorren los colores desde el primero.
+  const est=estadoFondoTextox();
+  if(est.mixta) fondoIdxTx=-1;
+  else {
+    fondoIdxTx=indiceFondoTextox(est.color)+1;
+    if(fondoIdxTx>=LOCO_COLORES_FONDO.length) fondoIdxTx=-1;
+  }
+  const c=colorFondoTextox();
+  const sel=window.getSelection();
+  if(sel.rangeCount && e.contains(sel.anchorNode) && sel.isCollapsed){
+    fondoCursorTextox(c);
+  } else {
+    // Primero se saca todo fondo previo de la selección (aunque sea mixta o esté anidada);
+    // después se aplica el color nuevo, así los fondos no se suman.
+    quitarFondoSeleccionTextox();
+    if(c) aplicarFondoEditable(c);
+  }
+  normalizarFondosTextox();
+  pintarBotonFondo(btn,c);
+  mostrarIndicadorFondo(btn,c,2);
+  localStorage.setItem('txt',e.innerHTML);
+  scheduleSnap();
+}
+
+// MODOLOCO
+let fondoIdxLoco=-1; // -1 = sin fondo
+function hoverFondoLoco(btn){ mostrarIndicadorFondo(btn,fondoColorActual,0); }
+function ciclarFondoLoco(btn){
+  fondoIdxLoco++;
+  if(fondoIdxLoco>=LOCO_COLORES_FONDO.length) fondoIdxLoco=-1;
+  const c=fondoIdxLoco>=0 ? LOCO_COLORES_FONDO[fondoIdxLoco] : null;
+  fondoColorActual=c;
+  pintarBotonFondo(btn,c);
+  mostrarIndicadorFondo(btn,c,2);
+  // El fondo de MODOLOCO es de la frase ENTERA: la que se está escribiendo ahora y
+  // todas las que vengan, hasta que se llegue a la X. Las ya guardadas no cambian.
+  const act=locoFraseActiva;
+  if(!act) return;
+  aplicarFondoFraseLoco(act,c);
+  act.focus();
+}
+function aplicarFondoFraseLoco(div,c){
+  div._fondo=c||undefined;
+  div.style.background=c ? c : '';
+  div.classList.toggle('con-fondo',!!c);
+}
+
+// ── Negrita / cursiva / subrayado de MODOLOCO: afectan a la FRASE ENTERA ──
+const BOTONES_FORMATO_LOCO=[['negrita','btn-negrita-loco'],['cursiva','btn-cursiva-loco'],['subrayado','btn-subrayado-loco']];
+function pintarBotonesFormatoLoco(f){
+  BOTONES_FORMATO_LOCO.forEach(([tipo,id])=>{
+    const b=document.getElementById(id);
+    if(b) b.classList.toggle('activo',!!f[tipo]);
+  });
+}
+function modosFormatoLoco(){
+  return {negrita:modoNegritaGlobal,cursiva:modoCursivaGlobal,subrayado:modoSubrayadoGlobal};
+}
+// Formato de un texto de la frase, según los tramos que lo rodean.
+function formatoNodoLoco(t,div){
+  const f={negrita:false,cursiva:false,subrayado:false};
+  for(let p=t.parentNode; p && p!==div; p=p.parentNode){
+    if(p.nodeType!==Node.ELEMENT_NODE) continue;
+    const st=p.style;
+    if(st.fontWeight==='bold' || parseInt(st.fontWeight)>=600) f.negrita=true;
+    if(st.fontStyle==='italic') f.cursiva=true;
+    if(((st.textDecorationLine||st.textDecoration)||'').includes('underline')) f.subrayado=true;
+  }
+  return f;
+}
+function textosDeFraseLoco(div){
+  const w=document.createTreeWalker(div,NodeFilter.SHOW_TEXT);
+  const r=[]; let t;
+  while((t=w.nextNode())) r.push(t);
+  return r;
+}
+// Estado de la frase: encendido solo si TODO el texto tiene ese formato. null si está vacía.
+function estadoFormatoFraseLoco(div){
+  const reales=textosDeFraseLoco(div).filter(t=>t.data.replace(/\u200B/g,''));
+  if(!reales.length) return null;
+  const est={negrita:true,cursiva:true,subrayado:true};
+  reales.forEach(t=>{
+    const f=formatoNodoLoco(t,div);
+    BOTONES_FORMATO_LOCO.forEach(([tipo])=>{ if(!f[tipo]) est[tipo]=false; });
+  });
+  return est;
+}
+// Los modos (y los botones) pasan a ser los de la frase; en una frase vacía se conserva lo que estaba encendido.
+function sincronizarModosConFraseLoco(div){
+  const est=div ? estadoFormatoFraseLoco(div) : null;
+  if(est){ modoNegritaGlobal=est.negrita; modoCursivaGlobal=est.cursiva; modoSubrayadoGlobal=est.subrayado; }
+  pintarBotonesFormatoLoco(modosFormatoLoco());
+}
+// Pone (o saca) el formato en todo el texto de la frase, sin perder el cursor.
+function aplicarFormatoAFraseLoco(div,tipo,valor){
+  const sel=window.getSelection();
+  let guardado=null;
+  if(sel.rangeCount && div.contains(sel.anchorNode)){
+    const r=sel.getRangeAt(0);
+    guardado=[r.startContainer,r.startOffset,r.endContainer,r.endOffset];
+  }
+  const nodos=textosDeFraseLoco(div);
+  const antes=nodos.map(t=>formatoNodoLoco(t,div));
+  const creados=new Set();
+  nodos.forEach((t,i)=>{
+    const f=Object.assign({},antes[i]); f[tipo]=valor;
+    let A;
+    while(t.parentElement && t.parentElement!==div && (A=t.parentElement.closest('.formato-span')) && div.contains(A) && A!==div){
+      sacarDeFondoTextox(t,A);
+    }
+    if(!(f.negrita||f.cursiva||f.subrayado)) return;
+    const clave=[f.negrita,f.cursiva,f.subrayado].join();
+    const prev=t.previousSibling;
+    if(prev && creados.has(prev) && prev._clave===clave){ prev.appendChild(t); return; }
+    const sp=document.createElement('span');
+    sp.className='formato-span';
+    if(f.negrita) sp.style.fontWeight='bold';
+    if(f.cursiva) sp.style.fontStyle='italic';
+    if(f.subrayado) sp.style.textDecoration='underline';
+    sp._clave=clave;
+    creados.add(sp);
+    t.before(sp);
+    sp.appendChild(t);
+  });
+  try{
+    if(guardado && div.contains(guardado[0]) && div.contains(guardado[2])){
+      const r=document.createRange();
+      r.setStart(guardado[0],guardado[1]); r.setEnd(guardado[2],guardado[3]);
+      sel.removeAllRanges(); sel.addRange(r);
+    }
+  }catch(_){}
+  if(div._st && div._st.unaLinea) div._st.xPct=ajustarAnchoUnaCajaLoco(div).xPct;
+}
+function toggleFormatoLoco(tipo,btn){
+  const div=locoFraseActiva;
+  const est=div ? estadoFormatoFraseLoco(div) : null;
+  if(!est){
+    // Frase vacía: queda encendido para lo que se escriba (y para las frases que vengan)
+    if(tipo==='negrita') modoNegritaGlobal=!modoNegritaGlobal;
+    else if(tipo==='cursiva') modoCursivaGlobal=!modoCursivaGlobal;
+    else modoSubrayadoGlobal=!modoSubrayadoGlobal;
+    pintarBotonesFormatoLoco(modosFormatoLoco());
+    if(div){ insertarMarcadorFormato(div); div.focus(); }
+    return;
+  }
+  aplicarFormatoAFraseLoco(div,tipo,!est[tipo]);
+  sincronizarModosConFraseLoco(div);
+  div.focus();
+}
+
+// Si lo que está tipeando no coincide con el formato activo (por ej. porque se hizo
+// clic en otra parte de la frase con otro formato, o sin ninguno), corrige el último
+// caracter tipeado para que quede con el formato que corresponde.
+function envolverUltimoCaracterConFormatoActual(){
+  const sel=window.getSelection();
+  if(!sel.rangeCount) return;
+  const range=sel.getRangeAt(0);
+  if(!range.collapsed) return;
+  const nodo=range.startContainer;
+  const offset=range.startOffset;
+  if(nodo.nodeType!==Node.TEXT_NODE || offset===0) return;
+  const texto=nodo.textContent;
+  const antes=texto.slice(0,offset-1);
+  const ultimo=texto.slice(offset-1,offset);
+  const despues=texto.slice(offset);
+  const span=document.createElement('span');
+  aplicarEstiloFormato(span);
+  span.textContent=ultimo;
+  const padre=nodo.parentNode;
+  const despuesNodo=document.createTextNode(despues);
+  padre.replaceChild(despuesNodo,nodo);
+  padre.insertBefore(span,despuesNodo);
+  padre.insertBefore(document.createTextNode(antes),span);
+  const r=document.createRange();
+  r.setStart(span.firstChild,1);
+  r.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(r);
+}
+
+function sacarUltimoCaracterDeFormato(){
+  const sel=window.getSelection();
+  if(!sel.rangeCount) return;
+  const range=sel.getRangeAt(0);
+  if(!range.collapsed) return;
+  const nodo=range.startContainer;
+  const offset=range.startOffset;
+  if(nodo.nodeType!==Node.TEXT_NODE || offset===0) return;
+  const span=nodo.parentElement && nodo.parentElement.closest('.formato-span');
+  if(!span) return;
+  const texto=nodo.textContent;
+  const ultimo=texto.slice(offset-1,offset);
+  nodo.textContent=texto.slice(0,offset-1)+texto.slice(offset);
+  const suelto=document.createTextNode(ultimo);
+  if(span.nextSibling) span.parentNode.insertBefore(suelto,span.nextSibling);
+  else span.parentNode.appendChild(suelto);
+  const r=document.createRange();
+  r.setStart(suelto,1);
+  r.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(r);
+}
+
+// Saca cualquier espacio, espacio invisible, o marcador vacío de "Fondo" que haya
+// quedado pegado al principio del recuadro (a veces el navegador lo mete solo).
+function limpiarInicioFrase(div){
+  let n=div.firstChild;
+  while(n){
+    if(n.nodeType===Node.TEXT_NODE){
+      const limpio=n.textContent.replace(/^[\s\u200B]+/,'');
+      if(limpio===n.textContent) return;
+      // deleteData (no textContent=) para que el cursor no salte al principio del texto
+      n.deleteData(0,n.textContent.length-limpio.length);
+      if(n.textContent.length===0){ n.remove(); n=div.firstChild; continue; }
+      return;
+    } else if(n.nodeType===Node.ELEMENT_NODE){
+      const textoVisible=n.textContent.replace(/\u200B/g,'');
+      if(textoVisible.length===0){ const sig=n.nextSibling; n.remove(); n=div.firstChild; continue; }
+      n=n.firstChild;
+      continue;
+    } else {
+      const sig=n.nextSibling; n.remove(); n=sig;
+    }
+  }
+}
+
+// HTML de la frase sin espacios invisibles ni marcadores de formato vacíos.
+function htmlFraseLimpio(div){
+  const c=div.cloneNode(true);
+  const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT);
+  const ts=[];
+  while(w.nextNode()) ts.push(w.currentNode);
+  ts.forEach(t=>{ t.textContent=t.textContent.replace(/\u200B/g,''); });
+  let cambio=true;
+  while(cambio){
+    cambio=false;
+    c.querySelectorAll('span').forEach(sp=>{
+      if(!sp.textContent && !sp.querySelector('*')){ sp.remove(); cambio=true; }
+    });
+  }
+  c.querySelectorAll('.marcador').forEach(sp=>sp.classList.remove('marcador'));
+  return c.innerHTML;
+}
+
+// Cablea una caja de escritura: la nueva de siempre, o una frase ya guardada que se está
+// editando. st = {size,anchoPx,altoPx,color,align,xPct,yPct,frase,unaLinea}
+// (frase = la frase guardada que se edita; null si es una caja nueva).
+function cablearFraseLoco(div,st){
+  // Los eventos se conectan una sola vez por caja; si la caja se vuelve a cablear (frase
+  // que pasa a edición) solo cambia el estado que usan.
+  div._st=st;
+  div._primerInput=true;
+  if(div._cableada) return;
+  div._cableada=true;
+  div._setColor=c=>{ div._st.color=c; };
+  div._setPos=(x,y)=>{ div._st.xPct=x; div._st.yPct=y; div._cxPct=undefined; };
+
+  div.addEventListener('input',()=>{
+    const st=div._st;
+    if(div._primerInput){
+      div._primerInput=false;
+      limpiarInicioFrase(div);
+    }
+    div.querySelectorAll('.marcador').forEach(sp=>{
+      if(sp.textContent.replace(/\u200B/g,'')!=='') sp.classList.remove('marcador');
+    });
+    // el ancho sigue al texto; si al crecer se pasa del borde derecho, se corre a la izquierda
+    if(st.unaLinea) st.xPct=ajustarAnchoUnaCajaLoco(div).xPct;
+    if(div.scrollHeight>div.clientHeight+2 || div.scrollWidth>div.clientWidth+1){
+      // usar delete (no textContent=) para no perder el formato ya escrito
+      document.execCommand('delete');
+      return;
+    }
+    const sel=window.getSelection();
+    const n=sel.anchorNode;
+    const elParent = n && (n.nodeType===Node.TEXT_NODE ? n.parentElement : n);
+    const spanCercano = elParent && elParent.closest('.formato-span');
+    if(!coincideFormatoActual(spanCercano)){
+      if(spanCercano) sacarUltimoCaracterDeFormato();
+      if(formatoActivoAhora()) envolverUltimoCaracterConFormatoActual();
+    }
+  });
+
+  // Termina la escritura/edición: guarda la frase (o la borra si quedó vacía).
+  div._terminar=()=>{
+    const st=div._st;
+    if(div._cerrada) return;
+    div._cerrada=true;
+    const textoPlano=div.textContent.replace(/\u200B/g,'');
+    limpiarInicioFrase(div);
+    div.classList.remove('activa');
+    div.contentEditable='false';
+    if(locoFraseActiva===div) locoFraseActiva=null;
+    if(textoPlano.trim().length>0){
+      const htmlLimpio=htmlFraseLimpio(div);
+      div._cxPct=undefined;
+      const anchoFinal=parseFloat(div.style.width)||st.anchoPx;
+      // Al crecer pudo quedar encima de otra frase: buscarle lugar libre para su tamaño final.
+      const dm=dimsPanelLoco();
+      const otras=Array.from(locoPanel.querySelectorAll('.loco-frase')).filter(d=>d!==div)
+        .map(d=>rectDeDivLoco(d,dm.pw,dm.ph));
+      if(costoSolapeLoco({x:st.xPct/100*dm.pw,y:st.yPct/100*dm.ph,w:anchoFinal,h:st.altoPx},otras)>0){
+        const l=buscarLugarLibre(anchoFinal,st.altoPx,dm.pw,dm.ph,otras,Math.random,120);
+        st.xPct=l.x/dm.pw*100; st.yPct=l.y/dm.ph*100;
+        div.style.left=st.xPct+'%'; div.style.top=st.yPct+'%';
+      }
+      const nuevaF=Object.assign({},st.frase||{},{html:htmlLimpio,xPct:st.xPct,yPct:st.yPct,size:st.size,color:st.color,align:st.align,anchoPx:anchoFinal,altoPx:st.altoPx});
+      if(!st.frase){ nuevaF.unaLinea=true; nuevaF.seed=Math.floor(Math.random()*2147483647); }
+      if(div._tipo!==undefined) nuevaF.tipo=div._tipo; else delete nuevaF.tipo;
+      if(div._fondo) nuevaF.fondo=div._fondo; else delete nuevaF.fondo;
+      div._frase=nuevaF;
+      locoFrases.push(nuevaF);
+      guardarFrasesLoco();
+    } else {
+      div.remove(); // (una frase editada que se deja vacía se borra)
+      guardarFrasesLoco();
+    }
+    if(st.restaurarFondo) st.restaurarFondo();
+  };
+
+  div.addEventListener('keydown',(ev)=>{
+    if(ev.key==='Enter'){
+      ev.preventDefault();
+      div._terminar();
+      crearCajaFraseLoco();
+    }
+  });
+}
+
+function crearCajaFraseLoco(){
+  const size=locoTamañoElegido||elegirPeso(LOCO_TAMAÑOS);
+  const {pw,ph}=dimsPanelLoco();
+  const {anchoPx,altoPx}=calcularCajaLoco(size,pw);
+  const paleta=coloresLocoActuales();
+  const color=paleta[Math.floor(Math.random()*paleta.length)];
+  const align='center';
+
+  // Lugar sin pisar a las frases ya escritas (y dentro de los márgenes del panel).
+  const obst=Array.from(locoPanel.querySelectorAll('.loco-frase')).map(d=>rectDeDivLoco(d,pw,ph));
+  const lugar=buscarLugarLibre(anchoPx,altoPx,pw,ph,obst,Math.random,120);
+  const st={size,anchoPx,altoPx,color,align,xPct:lugar.x/pw*100,yPct:lugar.y/ph*100,frase:null,unaLinea:true};
+
+  const div=document.createElement('div');
+  div.className='loco-frase activa';
+  div.contentEditable='true';
+  div.style.left=st.xPct+'%';
+  div.style.top=st.yPct+'%';
+  div.style.fontSize=size;
+  div.style.color=color;
+  div.style.width=LOCO_ANCHO_MIN_PX+'px'; // nace chica y crece con lo que se escribe (anchoPx solo reserva lugar libre)
+  div.style.height=altoPx+'px';
+  div.style.textAlign=align;
+  div.style.whiteSpace='nowrap'; // una sola línea
+  if(tipoAzarActivoLoco()){ div._tipo=tipoAlAzarLoco(); aplicarTipoAFraseLoco(div,div._tipo); }
+  cablearFraseLoco(div,st);
+
+  locoPanel.appendChild(div);
+  locoFraseActiva=div;
+  div.focus();
+  // El color de Fondo queda fijo (lo cambia solo el botón F): la frase nueva nace con él.
+  if(fondoColorActual) aplicarFondoFraseLoco(div,fondoColorActual);
+  if(formatoActivoAhora()) insertarMarcadorFormato(div);
+  div._cxPct=st.xPct+(anchoPx/2)/pw*100; // crece desde el centro de la zona libre que se reservó
+  st.xPct=ajustarAnchoUnaCajaLoco(div).xPct;
+  pintarBotonTamañoLoco();
+  pintarBotonColorLoco();
+}
+
+// ── Editar una frase ya guardada (click sobre ella) ──────────────────────────
+// La frase vuelve a ser la caja activa: se puede cambiar lo que dice, su color (botones de
+// color), el fondo, B/I/U. Enter (o clickear otra frase) la guarda; si se deja vacía, se borra.
+function editarFraseLoco(div,ev){
+  const f=div._frase;
+  if(!f) return;
+  // primero se cierra lo que se estaba escribiendo/editando (se guarda, o se descarta si está vacío)
+  const prev=locoPanel.querySelector('.loco-frase.activa');
+  if(prev && prev._terminar) prev._terminar();
+  const idx=locoFrases.indexOf(f);
+  if(idx<0) return;
+  locoFrases.splice(idx,1); // mientras se edita, la frase "vive" en la caja
+  guardarFrasesLoco();
+  const {pw}=dimsPanelLoco();
+  const st={
+    size:div.style.fontSize||f.size, anchoPx:parseFloat(div.style.width)||f.anchoPx, altoPx:f.altoPx,
+    color:f.color, align:f.align||'center',
+    xPct:parseFloat(div.style.left), yPct:parseFloat(div.style.top),
+    frase:f, unaLinea:!!f.unaLinea
+  };
+  div._frase=undefined;
+  div._editando=true;
+  div._cerrada=false;
+  div._tipo=f.tipo;
+  if(!st.unaLinea) div._multilinea=true; // las de varias líneas (de TEXTOX) no cambian de ancho
+  div.classList.add('activa');
+  div.contentEditable='true';
+  cablearFraseLoco(div,st);
+  if(st.unaLinea) div._cxPct=(st.xPct/100*pw+st.anchoPx/2)/pw*100;
+  // el botón F muestra el fondo de esta frase; al terminar vuelve al que estaba
+  const btnF=document.getElementById('btn-fondo-loco');
+  const idxAntes=fondoIdxLoco, colorAntes=fondoColorActual;
+  div._fondo=f.fondo||undefined;
+  fondoIdxLoco=f.fondo ? LOCO_COLORES_FONDO.indexOf(f.fondo) : -1;
+  fondoColorActual=f.fondo||null;
+  pintarBotonFondo(btnF,fondoColorActual);
+  st.restaurarFondo=()=>{ fondoIdxLoco=idxAntes; fondoColorActual=colorAntes; pintarBotonFondo(btnF,colorAntes); };
+  locoFraseActiva=div;
+  div.focus();
+  // cursor donde se hizo click (o al final si no se puede saber)
+  let rng=null;
+  if(ev && document.caretRangeFromPoint) rng=document.caretRangeFromPoint(ev.clientX,ev.clientY);
+  else if(ev && document.caretPositionFromPoint){
+    const cp=document.caretPositionFromPoint(ev.clientX,ev.clientY);
+    if(cp){ rng=document.createRange(); rng.setStart(cp.offsetNode,cp.offset); rng.collapse(true); }
+  }
+  if(!rng || !div.contains(rng.startContainer)){
+    rng=document.createRange(); rng.selectNodeContents(div); rng.collapse(false);
+  }
+  const sel=window.getSelection();
+  sel.removeAllRanges(); sel.addRange(rng);
+  pintarBotonTamañoLoco();
+  pintarBotonColorLoco();
+  sincronizarModosConFraseLoco(div); // B / I / U muestran lo que tiene esta frase
+}
+document.getElementById('modo-loco-panel').addEventListener('mousedown',(ev)=>{
+  if(locoModoBorrar || locoAnimando || ev.button!==0) return;
+  const div=ev.target.closest('.loco-frase');
+  if(!div || div.classList.contains('activa') || !div._frase) return;
+  ev.preventDefault();
+  editarFraseLoco(div,ev);
+});
+// Si se sale de MODOLOCO (o se cierra la página) en medio de una edición, se guarda.
+function cerrarEdicionLoco(){
+  const a=locoFraseActiva;
+  if(a && a._editando && a._terminar && !a._cerrada){ a._terminar(); crearCajaFraseLoco(); }
+}
+window.addEventListener('pagehide',()=>{
+  const a=locoFraseActiva;
+  if(a && a._editando && a._terminar && !a._cerrada) a._terminar();
+});
+
+// Mete la caja que se está escribiendo dentro del tablero (con sus márgenes),
+// usando el tamaño de destino del panel. Se hace ANTES de acomodar las frases
+// fijas, así ellas se ubican alrededor de la caja.
+function ajustarActivaLoco(){
+  const act=locoPanel.querySelector('.loco-frase.activa');
+  if(!act) return;
+  const {pw,ph}=dimsPanelLoco();
+  const r=rectDeDivLoco(act,pw,ph);
+  const mx=LOCO_MARGEN_PCT/100*pw, my=LOCO_MARGEN_PCT/100*ph;
+  const nx=Math.min(Math.max(r.x,mx),Math.max(mx,pw-mx-r.w));
+  const ny=Math.min(Math.max(r.y,my),Math.max(my,ph-my-r.h));
+  const xPct=nx/pw*100, yPct=ny/ph*100;
+  act.style.left=xPct+'%';
+  act.style.top=yPct+'%';
+  if(act._setPos) act._setPos(xPct,yPct);
+  locoPanel.scrollLeft=0; locoPanel.scrollTop=0;
+}
+
+function aplicarResolucionLoco(modo, reflow){
+  localStorage.setItem(LOCO_RES_KEY, modo);
+  let w,h;
+  if(modo==='compacto'){ const s=Math.min(650,window.innerWidth*0.6,window.innerHeight*0.8); w=s; h=s; }
+  else if(modo==='panoramico'){ w=window.innerWidth-6; h=window.innerHeight*0.55; }
+  else if(modo==='completo'){ w=window.innerWidth-6; h=window.innerHeight*0.92+33; }
+  else { w=window.innerWidth*0.85; h=window.innerHeight*0.8; } // normal: ajustado a la resolución del monitor
+  locoPanel.style.width=w+'px';
+  locoPanel.style.height=h+'px';
+  if(reflow!==false){
+    // las frases están guardadas en % del panel, así que se reacomodan solas;
+    // la caja activa (si hay una en curso) se conserva, no se pierde ni se duplica.
+    ajustarActivaLoco();
+    cargarFrasesLoco();
+  }
+}
+
+function cambiarResolucionLoco(modo){
+  try{
+    aplicarResolucionLoco(modo, true);
+    if(locoAnimando){
+      // Sigue reproduciendo: las frases se volvieron a crear al cambiar de tablero,
+      // así que hay que devolverles la animación y mandarlas a moverse de nuevo.
+      Array.from(locoPanel.querySelectorAll('.loco-frase:not(.activa)')).forEach(div=>{
+        div.style.transition='left 2.4s ease-in-out, top 2.4s ease-in-out';
+      });
+      void locoPanel.offsetWidth; // fijar la posición inicial antes de mover
+      moverFrasesAlAzar();
+    } else if(locoFraseActiva){
+      locoFraseActiva.focus({preventScroll:true});
+    }
+  }catch(err){
+    console.warn('MODOLOCO: se rompió el reacomodo, se deja como arte', err);
+  }
+}
+
+function exportarModoLocoPNG(){
+  if(typeof html2canvas==='undefined'){
+    alert('No se pudo cargar la librería de exportación (revisá tu conexión a internet).');
+    return;
+  }
+  const activa=document.querySelector('.loco-frase.activa');
+  if(activa) activa.classList.add('oculto-export');
+  const fondoExport = modoPanelActual==='amarillo' ? '#c9b458' : '#000000';
+  html2canvas(locoPanel,{backgroundColor:fondoExport,useCORS:true,scale:2,logging:false}).then(canvas=>{
+    const a=document.createElement('a');
+    a.href=canvas.toDataURL('image/png');
+    a.download='MODOLOCO.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    if(activa) activa.classList.remove('oculto-export');
+  }).catch(err=>{
+    console.error(err);
+    alert('Falló la exportación (puede pasar). Se considera arte.');
+    if(activa) activa.classList.remove('oculto-export');
+  });
+}
+
+// ── Guardar / Abrir la creación de MODOLOCO como archivo .json ──
+function guardarModoLocoJSON(){
+  if(!locoFrases.length){
+    alert('Todavía no hay frases para guardar (escribí una y apretá Enter).');
+    return;
+  }
+  const datos={
+    app:'MODOLOCO',
+    version:1,
+    guardado:new Date().toISOString(),
+    panel:modoPanelActual,
+    resolucion:localStorage.getItem(LOCO_RES_KEY)||'completo',
+    frases:locoFrases
+  };
+  const blob=new Blob([JSON.stringify(datos,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='MODOLOCO.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+// Deja solo texto + negrita/cursiva/subrayado/fondo (lo que MODOLOCO genera). Así un
+// archivo ajeno o modificado no puede meter etiquetas ni código en la pantalla.
+function limpiarHtmlLoco(html){
+  const tpl=document.createElement('template');
+  tpl.innerHTML=String(html);
+  const out=document.createElement('div');
+  const RE_COLOR=/^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\))$/i;
+  const copiar=(origen,destino)=>{
+    origen.childNodes.forEach(n=>{
+      if(n.nodeType===Node.TEXT_NODE){
+        destino.appendChild(document.createTextNode(n.textContent));
+      } else if(n.nodeType===Node.ELEMENT_NODE){
+        if(n.tagName==='SCRIPT'||n.tagName==='STYLE') return;
+        if(n.tagName==='SPAN'){
+          const sp=document.createElement('span');
+          if(n.classList.contains('formato-span')) sp.className='formato-span';
+          const st=n.style;
+          if(st.fontWeight==='bold'||parseInt(st.fontWeight)>=600) sp.style.fontWeight='bold';
+          if(st.fontStyle==='italic') sp.style.fontStyle='italic';
+          if((st.textDecorationLine||st.textDecoration||'').includes('underline')) sp.style.textDecoration='underline';
+          if(st.backgroundColor && RE_COLOR.test(st.backgroundColor)) sp.style.background=st.backgroundColor;
+          copiar(n,sp);
+          destino.appendChild(sp);
+        } else {
+          copiar(n,destino); // otras etiquetas: se conserva solo su texto
+        }
+      }
+    });
+  };
+  copiar(tpl.content,out);
+  return out.innerHTML;
+}
+
+// Valida y normaliza una frase leída de un archivo; devuelve null si no sirve.
+function frasePermitidaLoco(f){
+  if(!f || typeof f!=='object') return null;
+  const num=(v,min,max)=>(typeof v==='number' && isFinite(v)) ? Math.min(max,Math.max(min,v)) : null;
+  const xPct=num(f.xPct,-50,150), yPct=num(f.yPct,-50,150);
+  const anchoPx=num(f.anchoPx,10,5000), altoPx=num(f.altoPx,10,5000);
+  if(xPct===null||yPct===null||anchoPx===null||altoPx===null) return null;
+  const html=limpiarHtmlLoco(f.html!==undefined ? f.html : (f.texto||''));
+  const tmp=document.createElement('div'); tmp.innerHTML=html;
+  if(!tmp.textContent.trim()) return null;
+  const size=(typeof f.size==='string' && /^[\d.]+(rem|px|em)$/.test(f.size)) ? f.size : '1.35rem';
+  const color=(typeof f.color==='string' && /^#[0-9a-f]{3,8}$/i.test(f.color)) ? f.color : '#ffffff';
+  const align=['left','center','right'].includes(f.align) ? f.align : 'center';
+  const seed=(Number.isInteger(f.seed) && f.seed>=0) ? f.seed : Math.floor(Math.random()*2147483647);
+  const r={html,xPct,yPct,size,color,align,anchoPx,altoPx,unaLinea:!!f.unaLinea,seed};
+  if(typeof f.fondo==='string' && /^#[0-9a-f]{6}$/i.test(f.fondo)) r.fondo=f.fondo;
+  if(f.bold===true) r.bold=true;
+  if(f.italic===true) r.italic=true;
+  if(Number.isInteger(f.tipo) && f.tipo>=0 && f.tipo<tiposLoco.length) r.tipo=f.tipo;
+  return r;
+}
+
+function abrirModoLocoJSON(input){
+  const archivo=input.files && input.files[0];
+  input.value=''; // así se puede volver a elegir el mismo archivo
+  if(!archivo) return;
+  const lector=new FileReader();
+  lector.onerror=()=>alert('No se pudo leer el archivo.');
+  lector.onload=()=>{
+    let datos;
+    try{ datos=JSON.parse(lector.result); }
+    catch(err){ alert('Ese archivo no es un JSON válido.'); return; }
+    if(!datos || datos.app!=='MODOLOCO' || !Array.isArray(datos.frases)){
+      alert('Ese archivo no es una creación de MODOLOCO.');
+      return;
+    }
+    const frases=datos.frases.map(frasePermitidaLoco).filter(Boolean);
+    if(!frases.length){
+      alert('El archivo no tiene frases que se puedan abrir.');
+      return;
+    }
+
+    cerrarEdicionLoco();
+    detenerAnimacionLoco();
+    locoFrases=frases;
+    guardarFrasesLoco();
+    // tablero (negro/amarillo)
+    modoPanelActual = datos.panel==='amarillo' ? 'amarillo' : 'negro';
+    localStorage.setItem(LOCO_PANEL_KEY,modoPanelActual);
+    locoPanel.classList.toggle('panel-amarillo',modoPanelActual==='amarillo');
+    const btnPanel=document.getElementById('btn-panel-loco');
+    if(btnPanel) btnPanel.classList.toggle('activo',modoPanelActual==='amarillo');
+    // tamaño del tablero (1 2 3 4)
+    const res=['completo','normal','compacto','panoramico'].includes(datos.resolucion) ? datos.resolucion : (localStorage.getItem(LOCO_RES_KEY)||'completo');
+    aplicarResolucionLoco(res,false);
+    cargarFrasesLoco();
+    if(!locoPanel.querySelector('.loco-frase.activa')) crearCajaFraseLoco();
+    else { locoFraseActiva=locoPanel.querySelector('.loco-frase.activa'); locoFraseActiva.focus(); }
+  };
+  lector.readAsText(archivo);
+}
+
+// Al hacer click en CUALQUIER botón, evitar que se quede con el foco: así Enter/Espacio
+// no vuelven a "apretar" el botón y las letras siguen yendo al área de escritura.
+// ── Insertar una selección de TEXTOX en MODOLOCO (sin ir a esa pantalla) ──
+function mostrarVueloInsertarEnModoLoco(btn){
+  const rect=btn.getBoundingClientRect();
+  const el=document.createElement('div');
+  el.innerHTML='<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" style="flex:none"><path d="M14 8 H2.5 M7 3.5 L2.5 8 L7 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Insertado en MODOLOCO</span>';
+  el.className='vuelo-insertar-loco';
+  el.style.top=(rect.top+rect.height/2-12)+'px';
+  el.style.right=(window.innerWidth-rect.left+10)+'px';
+  document.body.appendChild(el);
+  el.addEventListener('animationend',()=>el.remove());
+}
+
+// Tamaño de letra (px) del texto seleccionado en TEXTOX; null si no se puede saber.
+function tamañoFuenteSeleccionTextox(sel){
+  try{
+    if(!sel || sel.rangeCount===0) return null;
+    const r=sel.getRangeAt(0);
+    let n=r.startContainer;
+    if(n.nodeType===Node.ELEMENT_NODE && n.childNodes[r.startOffset]) n=n.childNodes[r.startOffset];
+    // si cayó en un nodo vacío/de salto, buscar el primer texto real dentro del rango
+    if(!(n.nodeType===Node.TEXT_NODE && n.textContent.trim())){
+      const w=document.createTreeWalker(r.commonAncestorContainer.nodeType===Node.TEXT_NODE?r.commonAncestorContainer.parentNode:r.commonAncestorContainer,NodeFilter.SHOW_TEXT);
+      let t; n=null;
+      while((t=w.nextNode())){ if(r.intersectsNode(t) && t.textContent.trim()){ n=t; break; } }
+      if(!n) return null;
+    }
+    const el=n.nodeType===Node.TEXT_NODE?n.parentElement:n;
+    const px=parseFloat(getComputedStyle(el).fontSize);
+    return (px>0)?px:null;
+  }catch(err){ return null; }
+}
+
+// Arma el HTML de la selección de TEXTOX conservando solo negrita, cursiva y subrayado
+// (con el mismo formato de .formato-span que usa MODOLOCO al escribir). Los saltos
+// de línea/párrafo se convierten en un espacio.
+function htmlFormatoSeleccion(sel){
+  const raiz=document.getElementById('e');
+  const esc=t=>{ const d=document.createElement('div'); d.textContent=t; return d.innerHTML; };
+  try{
+    const r=sel.getRangeAt(0);
+    const base=r.commonAncestorContainer.nodeType===Node.TEXT_NODE ? r.commonAncestorContainer.parentNode : r.commonAncestorContainer;
+    const walker=document.createTreeWalker(base,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT);
+    const BLOQUE='div,p,li,h1,h2,h3,h4,h5,h6,blockquote,pre,tr';
+    const partes=[]; let bloquePrev=null, sepPendiente=false;
+    const formatoDe=t=>{
+      const el=t.parentElement, cs=getComputedStyle(el);
+      const b=parseInt(cs.fontWeight)>=600 || cs.fontWeight==='bold';
+      const i=cs.fontStyle==='italic' || cs.fontStyle==='oblique';
+      let u=false;
+      for(let x=el; x; x=x.parentElement){
+        if((getComputedStyle(x).textDecorationLine||'').includes('underline')){ u=true; break; }
+        if(x===raiz) break;
+      }
+      return {b,i,u};
+    };
+    let n;
+    while((n=walker.nextNode())){
+      if(!r.intersectsNode(n)) continue;
+      if(n.nodeType===Node.ELEMENT_NODE){ if(n.tagName==='BR') sepPendiente=true; continue; }
+      const len=n.textContent.length;
+      const ini=(n===r.startContainer)?r.startOffset:0;
+      const fin=(n===r.endContainer)?r.endOffset:len;
+      let txt=n.textContent.slice(ini,fin).replace(/[\s\u200B\u00A0]+/g,' ');
+      if(!txt.trim()){ if(txt) sepPendiente=true; continue; }
+      const bloque=n.parentElement.closest(BLOQUE);
+      if(partes.length && bloque!==bloquePrev) sepPendiente=true;
+      bloquePrev=bloque;
+      if(sepPendiente && partes.length && !txt.startsWith(' ')) txt=' '+txt;
+      sepPendiente=false;
+      const f=formatoDe(n);
+      const ult=partes[partes.length-1];
+      if(ult && ult.b===f.b && ult.i===f.i && ult.u===f.u) ult.t+=txt;
+      else partes.push({t:txt,...f});
+    }
+    if(!partes.length) return esc(sel.toString().trim());
+    partes[0].t=partes[0].t.replace(/^\s+/,'');
+    partes[partes.length-1].t=partes[partes.length-1].t.replace(/\s+$/,'');
+    const cont=document.createElement('div');
+    partes.forEach(p=>{
+      if(!p.t) return;
+      if(!p.b && !p.i && !p.u){ cont.appendChild(document.createTextNode(p.t)); return; }
+      const sp=document.createElement('span');
+      sp.className='formato-span';
+      if(p.b) sp.style.fontWeight='bold';
+      if(p.i) sp.style.fontStyle='italic';
+      if(p.u) sp.style.textDecoration='underline';
+      sp.textContent=p.t;
+      cont.appendChild(sp);
+    });
+    return cont.innerHTML || esc(sel.toString().trim());
+  }catch(err){
+    return esc(sel.toString().trim());
+  }
+}
+
+function enviarSeleccionAModoLoco(btn){
+  const sel=window.getSelection();
+  const texto=sel && sel.toString().trim();
+  mostrarVueloInsertarEnModoLoco(btn);
+  if(!texto) return;
+  const html=htmlFormatoSeleccion(sel);
+
+  if(!locoPanel) locoPanel=document.getElementById('modo-loco-panel');
+  if(!locoPanel.style.width || !locoPanel.style.height){
+    aplicarResolucionLoco(localStorage.getItem(LOCO_RES_KEY)||'completo', false);
+  }
+  const {pw,ph}=dimsPanelLoco();
+
+  // Tamaño: el mismo que tiene la selección en TEXTOX (si no se puede saber, al azar como antes).
+  const pxSel=tamañoFuenteSeleccionTextox(sel);
+  const tipoInsertada = tipoAzarActivoLoco() ? tipoAlAzarLoco() : undefined;
+  let size, anchoPx, altoPx, unaLinea=true;
+  if(pxSel){
+    size=pxSel+'px';
+    const fam = tipoInsertada!==undefined ? tiposLoco[tipoInsertada] : getComputedStyle(locoPanel).fontFamily;
+    const med=document.createElement('span');
+    med.style.cssText='position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;font-size:'+size+';font-family:'+fam+';';
+    med.innerHTML=html;
+    document.body.appendChild(med);
+    const wTexto=med.getBoundingClientRect().width;
+    const maxAncho=Math.max(90,pw-2*LOCO_MARGEN_PX);
+    if(wTexto+8<=maxAncho){
+      anchoPx=Math.ceil(wTexto)+8;
+      altoPx=Math.round(pxSel*1.5);
+    } else {
+      // no entra en una línea: se mantiene el tamaño y se parte en varias líneas
+      unaLinea=false;
+      anchoPx=maxAncho;
+      med.style.whiteSpace='normal';
+      med.style.width=(maxAncho-8)+'px';
+      altoPx=Math.min(Math.ceil(med.getBoundingClientRect().height)+6, Math.floor(ph*0.9));
+    }
+    med.remove();
+  } else {
+    size=locoTamañoElegido||elegirPeso(LOCO_TAMAÑOS);
+    ({anchoPx,altoPx}=calcularCajaLoco(size,pw));
+  }
+  const modoGuardado=localStorage.getItem(LOCO_PANEL_KEY)||'negro';
+  const paleta = modoGuardado==='negro'
+    ? ['#ffffff','#1a8fff','#aaee00','#ff6600','#ff00fe','#777777']
+    : ['#111111','#ffffff','#1a8fff','#aaee00','#ff6600','#ff00fe','#777777'];
+  const color=paleta[Math.floor(Math.random()*paleta.length)];
+
+  let frases=[];
+  try{ frases=JSON.parse(localStorage.getItem(LOCO_KEY)||'[]'); }catch(err){ frases=[]; }
+  const obst=frases.map(f=>({x:f.xPct/100*pw, y:f.yPct/100*ph, w:f.anchoPx, h:f.altoPx}));
+  const lugar=buscarLugarLibre(anchoPx,altoPx,pw,ph,obst,Math.random,120);
+  const xPct=lugar.x/pw*100, yPct=lugar.y/ph*100;
+
+  const nuevaInsertada={html,xPct,yPct,size,color,align:'center',anchoPx,altoPx,unaLinea,seed:Math.floor(Math.random()*2147483647)};
+  if(tipoInsertada!==undefined) nuevaInsertada.tipo=tipoInsertada;
+  frases.push(nuevaInsertada);
+  localStorage.setItem(LOCO_KEY, JSON.stringify(frases));
+  if(typeof locoFrases!=='undefined') locoFrases=frases;
+}
+
+document.addEventListener('mousedown',(ev)=>{
+  if(ev.target.closest('button')) ev.preventDefault();
+});
+
+window.addEventListener('resize',()=>{
+  if(locoPanel && document.getElementById('modo-loco-overlay').classList.contains('mostrando')){
+    const modo=localStorage.getItem(LOCO_RES_KEY)||'completo';
+    aplicarResolucionLoco(modo,true);
+  }
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</body>
+</html>
